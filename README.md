@@ -5,10 +5,10 @@
 Antigravity 输入框底栏的上下文与配额胶囊。
 
 <p align="center">
-  <img src="assets/ctx-light.png" width="24%" alt="CTX：缓存命中" />
-  <img src="assets/ctx-warning-light.png" width="24%" alt="CTX：3 分钟后黄色预警，约 1 分钟过期" />
-  <img src="assets/ctx-expired-light.png" width="24%" alt="CTX：4 分钟后红色过期提示" />
-  <img src="assets/quota-light.png" width="24%" alt="多模型 5h 与 Weekly 配额" />
+  <img src="assets/composer-quota-light.png" width="100%" alt="浅色输入框：内联胶囊与多模型额度面板" />
+</p>
+<p align="center">
+  <img src="assets/composer-context-dark.png" width="100%" alt="深色输入框：上下文组成面板，右侧展示 3 分钟黄色预警与 4 分钟红色过期状态" />
 </p>
 
 ## 功能

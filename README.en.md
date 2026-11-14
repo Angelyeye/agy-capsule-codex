@@ -5,10 +5,10 @@
 Context and quota capsules in the Antigravity composer footer.
 
 <p align="center">
-  <img src="assets/ctx-light.png" width="24%" alt="CTX: cache hit" />
-  <img src="assets/ctx-warning-light.png" width="24%" alt="CTX: yellow warning after 3 minutes, about 1 minute until expiry" />
-  <img src="assets/ctx-expired-light.png" width="24%" alt="CTX: red expiry indicator after 4 minutes" />
-  <img src="assets/quota-light.png" width="24%" alt="Multi-model 5h and Weekly quotas" />
+  <img src="assets/composer-quota-light.png" width="100%" alt="Light composer with inline capsules and multi-model quota panel" />
+</p>
+<p align="center">
+  <img src="assets/composer-context-dark.png" width="100%" alt="Dark composer with context breakdown, plus yellow cache warning at 3 minutes and red expiry at 4 minutes" />
 </p>
 
 ## Features
