@@ -3,8 +3,10 @@
 Antigravity 输入框底栏的上下文与配额胶囊。
 
 <p align="center">
-  <img src="assets/preview-light.png" width="48%" alt="Light Mode" />
-  <img src="assets/preview-dark.png" width="48%" alt="Dark Mode" />
+  <img src="assets/ctx-light.png" width="24%" alt="Context Light" />
+  <img src="assets/quota-light.png" width="24%" alt="Quota Light" />
+  <img src="assets/ctx-dark.png" width="24%" alt="Context Dark" />
+  <img src="assets/quota-dark.png" width="24%" alt="Quota Dark" />
 </p>
 
 ## 功能
