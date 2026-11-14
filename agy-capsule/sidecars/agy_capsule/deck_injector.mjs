@@ -99,8 +99,8 @@ function pageMount(d) {
   }
 
   // Upgrade or initialize DOM structure in-place
-  if (root.getAttribute('data-deck-ver') !== '32') {
-    root.setAttribute('data-deck-ver', '32');
+  if (root.getAttribute('data-deck-ver') !== '33') {
+    root.setAttribute('data-deck-ver', '33');
     root.style.cssText = [
       'display: inline-flex',
       'align-items: center',
@@ -179,7 +179,7 @@ function pageMount(d) {
           border: 1px solid var(--border, rgba(128, 128, 128, 0.18));
           border-radius: 10px;
           padding: 10px 12px;
-          box-shadow: 0 12px 32px rgba(0, 0, 0, 0.22), 0 2px 8px rgba(0, 0, 0, 0.08);
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.03);
           z-index: 999999;
           color: var(--muted-foreground, #8e8e93);
           font-size: 13.5px;
