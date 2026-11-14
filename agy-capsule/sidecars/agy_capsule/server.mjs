@@ -273,7 +273,7 @@ const UI_HTML = `<!DOCTYPE html>
     body {
       margin: 0;
       padding: 12px 14px;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-family: var(--font-sans, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
       background: var(--background, #141414);
       color: var(--foreground, #ebebeb);
       font-size: 13.5px;

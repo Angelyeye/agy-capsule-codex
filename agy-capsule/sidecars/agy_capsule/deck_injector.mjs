@@ -99,15 +99,15 @@ function pageMount(d) {
   }
 
   // Upgrade or initialize DOM structure in-place
-  if (root.getAttribute('data-deck-ver') !== '29') {
-    root.setAttribute('data-deck-ver', '29');
+  if (root.getAttribute('data-deck-ver') !== '30') {
+    root.setAttribute('data-deck-ver', '30');
     root.style.cssText = [
       'display: inline-flex',
       'align-items: center',
       'gap: 0px',
       'margin-left: 6px',
       'font-size: 12.5px',
-      'font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      'font-family: var(--font-sans, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif)',
       'color: var(--secondary-foreground, var(--foreground, #3f3f46))',
       'user-select: none',
       'position: relative',
