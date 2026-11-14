@@ -99,8 +99,8 @@ function pageMount(d) {
   }
 
   // Upgrade or initialize DOM structure in-place
-  if (root.getAttribute('data-deck-ver') !== '26') {
-    root.setAttribute('data-deck-ver', '26');
+  if (root.getAttribute('data-deck-ver') !== '27') {
+    root.setAttribute('data-deck-ver', '27');
     root.style.cssText = [
       'display: inline-flex',
       'align-items: center',
@@ -221,15 +221,6 @@ function pageMount(d) {
           border-radius: 999px;
           transition: width 0.25s ease;
         }
-        #deck-metrics-strip .dk-tick {
-          position: absolute;
-          top: 0;
-          bottom: 0;
-          width: 1.5px;
-          background: var(--foreground, #18181b);
-          opacity: 0.45;
-          pointer-events: none;
-        }
         #deck-metrics-strip .dk-list {
           display: grid;
           grid-template-columns: 1fr auto minmax(44px, auto);
@@ -334,7 +325,6 @@ function pageMount(d) {
             <div class="dk-seg" data-el="segRead" style="width: 0%; background: #388bfd"></div>
             <div class="dk-seg" data-el="segThink" style="width: 0%; background: #00b386"></div>
             <div class="dk-seg" data-el="segOut" style="width: 0%; background: #e86a24"></div>
-            <div class="dk-tick" data-el="compactTick" style="display: none"></div>
           </div>
           <div class="dk-list">
             <div class="dk-item-row" data-el="rowCacheHit">
@@ -445,7 +435,6 @@ function pageMount(d) {
   const segThink = root.querySelector('[data-el="segThink"]');
   const segTurn0 = root.querySelector('[data-el="segTurn0"]');
   const dotCached = root.querySelector('[data-el="dotCached"]');
-  const compactTick = root.querySelector('[data-el="compactTick"]');
   const ctxIconSvg = root.querySelector('[data-el="ctxIconSvg"]');
 
   if (segRead) segRead.style.width = d.segReadW;
@@ -465,10 +454,6 @@ function pageMount(d) {
   const valCacheHitKEl = root.querySelector('[data-k="valCacheHitK"]');
   if (valCacheHitKEl) {
     valCacheHitKEl.style.color = d.cacheValColor;
-  }
-  if (compactTick) {
-    compactTick.style.display = d.tickDisplay;
-    compactTick.style.left = d.tickLeft;
   }
 
   // Update Quota Popover HTML
@@ -552,8 +537,6 @@ function toView(d) {
   const thinkPct = maxCtx > 0 ? Math.round((think / maxCtx) * 100) : 0;
   const turn0Pct = maxCtx > 0 ? Math.round((turn0 / maxCtx) * 100) : 0;
   const cacheHitPct = ctx > 0 ? Math.round((cached / ctx) * 100) : 0;
-
-  const compactThr = d.compactThresholdTokens || 0;
 
   const idleSec = ctx > 0 && d.lastStepEpochMs ? Math.max(0, Math.floor((Date.now() - d.lastStepEpochMs) / 1000)) : 0;
   let cacheIconSvg =
@@ -643,8 +626,6 @@ function toView(d) {
     cacheValColor,
     cacheValDeco,
     cacheValOp,
-    tickDisplay: compactThr > 0 && maxCtx > 0 ? 'block' : 'none',
-    tickLeft: compactThr > 0 && maxCtx > 0 ? ((compactThr / maxCtx) * 100).toFixed(2) + '%' : '0%',
     valCacheHit,
     valCacheHitK,
     valTurn0Pct: turn0Pct + '%',

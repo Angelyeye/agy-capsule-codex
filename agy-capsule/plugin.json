@@ -6,7 +6,7 @@
   "logo": "assets/logo.svg",
   "suggestedPrompts": [
     "Check current context token usage with /ctx",
-    "Open the agy-capsule side panel",
+    "Check cache status and remaining model quotas",
     "Analyze token growth and cache hit rate in this session"
   ]
 }

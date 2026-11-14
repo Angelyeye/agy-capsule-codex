@@ -155,12 +155,11 @@ function resolveLatestConvId(preferredId) {
 
 async function makeEmptyContextResult() {
   return {
-    uiVersion: 17,
+    uiVersion: 18,
     cachedIn: 0,
     uncachedIn: 0,
     contextTokens: 0,
     maxContextTokens: 256000,
-    compactThresholdTokens: 200000,
     lastStepEpochMs: 0,
     turn0Tokens: 0,
     totalOutputTokens: 0,
@@ -249,12 +248,11 @@ async function inspectConversation(convId, exact = false) {
   const quotaGroups = await fetchQuotaGroups();
 
   return {
-    uiVersion: 17,
+    uiVersion: 18,
     cachedIn: latest.cachedIn,
     uncachedIn: latest.uncachedIn,
     contextTokens: latest.contextTokens,
     maxContextTokens,
-    compactThresholdTokens: maxContextTokens === 256000 ? 200000 : 0,
     lastStepEpochMs,
     turn0Tokens,
     totalOutputTokens,
@@ -315,16 +313,6 @@ const UI_HTML = `<!DOCTYPE html>
       gap: 1.5px;
       overflow: hidden;
       margin-bottom: 12px;
-    }
-    .compact-tick {
-      position: absolute;
-      top: 0;
-      bottom: 0;
-      width: 1.5px;
-      background: var(--foreground, #18181b);
-      opacity: 0.45;
-      pointer-events: none;
-      display: none;
     }
     .seg {
       height: 100%;
@@ -448,7 +436,6 @@ const UI_HTML = `<!DOCTYPE html>
       <div class="seg" id="seg-read" style="width: 0%; background: #388bfd"></div>
       <div class="seg" id="seg-think" style="width: 0%; background: #00b386"></div>
       <div class="seg" id="seg-out" style="width: 0%; background: #e86a24"></div>
-      <div class="compact-tick" id="compact-tick" title="Auto-compact threshold (200k)"></div>
     </div>
 
     <div class="list">
@@ -584,7 +571,7 @@ const UI_HTML = `<!DOCTYPE html>
         const res = await fetch('/api/context' + qStr, { method: 'GET', headers });
         const d = await res.json();
         if (d.error) return;
-        if (d.uiVersion && d.uiVersion !== 17) {
+        if (d.uiVersion && d.uiVersion !== 18) {
           window.location.reload();
           return;
         }
@@ -607,11 +594,9 @@ const UI_HTML = `<!DOCTYPE html>
         const thinkPct = maxCtx > 0 ? Math.round((think / maxCtx) * 100) : 0;
         const turn0Pct = maxCtx > 0 ? Math.round((turn0 / maxCtx) * 100) : 0;
         const cacheHitPct = ctx > 0 ? Math.round((cached / ctx) * 100) : 0;
-        const compactThr = d.compactThresholdTokens || 0;
 
         const usedPctEl = document.getElementById('used-pct');
         usedPctEl.textContent = usedPct + '% used';
-        usedPctEl.style.color = (compactThr > 0 && ctx >= compactThr) ? '#f59e0b' : '';
 
         document.getElementById('used-fraction').textContent = fmtK(ctx) + ' / ' + fmtK(maxCtx);
         document.getElementById('used-fraction').title = fmtExact(ctx) + ' / ' + fmtExact(maxCtx) + ' tokens';
@@ -621,14 +606,6 @@ const UI_HTML = `<!DOCTYPE html>
         document.getElementById('seg-out').style.width = (out * scale).toFixed(2) + '%';
         document.getElementById('seg-think').style.width = (think * scale).toFixed(2) + '%';
         document.getElementById('seg-turn0').style.width = (turn0 * scale).toFixed(2) + '%';
-
-        const tickEl = document.getElementById('compact-tick');
-        if (compactThr > 0 && maxCtx > 0) {
-          tickEl.style.display = 'block';
-          tickEl.style.left = ((compactThr / maxCtx) * 100).toFixed(2) + '%';
-        } else {
-          tickEl.style.display = 'none';
-        }
 
         // 3-minute cache cooling warning & 4-minute cold state
         const idleSec = (ctx > 0 && d.lastStepEpochMs) ? Math.max(0, Math.floor((Date.now() - d.lastStepEpochMs) / 1000)) : 0;
@@ -705,5 +682,7 @@ if (process.env.ANTIGRAVITY_SIDECAR_WEB_PORT) {
   app.page('/ui.html', () => UI_HTML);
   app.api('/api/context', (data) => inspectConversation(data?.conversationId || app.config.conversationId), 'GET');
   app.run();
+}
+if (process.env.ANTIGRAVITY_LS_ADDRESS || process.env.ANTIGRAVITY_SIDECAR_WEB_PORT) {
   startDeckInjector(inspectConversation);
 }
