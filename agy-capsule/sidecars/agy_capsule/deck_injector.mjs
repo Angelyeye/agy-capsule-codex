@@ -99,8 +99,8 @@ function pageMount(d) {
   }
 
   // Upgrade or initialize DOM structure in-place
-  if (root.getAttribute('data-deck-ver') !== '27') {
-    root.setAttribute('data-deck-ver', '27');
+  if (root.getAttribute('data-deck-ver') !== '28') {
+    root.setAttribute('data-deck-ver', '28');
     root.style.cssText = [
       'display: inline-flex',
       'align-items: center',
@@ -280,7 +280,7 @@ function pageMount(d) {
         }
         #deck-metrics-strip .dk-q-row {
           display: grid;
-          grid-template-columns: 54px 50px 48px;
+          grid-template-columns: minmax(54px, auto) 50px 48px;
           align-items: center;
           column-gap: 8px;
           font-size: 13.5px;
@@ -407,25 +407,54 @@ function pageMount(d) {
     }
     mt = mt.trim().toLowerCase();
     const q = root._deckQuotas || d;
-    let q5h = q.gemini5h || '--%';
-    let qWk = q.geminiWk || '--%';
+    const groups = q.quotaSummaryGroups || [];
 
-    if (mt.includes('claude') || mt.includes('gpt') || mt.includes('sonnet') || mt.includes('opus')) {
-      q5h = q.claude5h || '--%';
-      qWk = q.claudeWk || '--%';
-    } else if (mt.includes('argon')) {
-      q5h = q.argon5h || '--%';
-      qWk = q.argonWk || '--%';
+    let matched = null;
+    // 1. Match specific non-generic group titles (e.g. "Gemini 4 Argon", "Gemini 4 Carbon", "Claude and GPT models")
+    for (const g of groups) {
+      if (g.title === 'Gemini') continue;
+      if (
+        (g.rawName.includes('claude') || g.rawName.includes('gpt')) &&
+        (mt.includes('claude') || mt.includes('sonnet') || mt.includes('opus') || mt.includes('gpt'))
+      ) {
+        matched = g;
+        break;
+      }
+      const tokens = g.rawName
+        .split(/[^a-z0-9]+/)
+        .filter((t) => t.length >= 3 && !['gemini', 'model', 'models', 'and', 'the', 'for'].includes(t));
+      if (tokens.some((t) => mt.includes(t))) {
+        matched = g;
+        break;
+      }
     }
-    setK('pill5h', q5h);
-    setK('pillWk', qWk);
+
+    // 2. Match explicit "Models within this group: ..." description list
+    if (!matched) {
+      const modelKeys = ['carbon', 'argon', 'hydrogen', 'flash', 'claude', 'sonnet', 'opus', 'gpt'];
+      const activeKeys = modelKeys.filter((k) => mt.includes(k));
+      if (activeKeys.length > 0) {
+        matched = groups.find((g) => activeKeys.some((k) => g.modelsInGroup && g.modelsInGroup.includes(k))) || null;
+      }
+    }
+
+    // 3. Fallback to main Gemini group (handles Ultra where Argon is part of Gemini Models)
+    if (!matched) {
+      matched = groups.find((g) => g.title === 'Gemini') || groups[0] || null;
+    }
+
+    setK('pill5h', matched ? matched.q5h || '--%' : '--%');
+    setK('pillWk', matched ? matched.qWk || '--%' : '--%');
     return mt;
   };
+  root._applyModelQuota = applyModelQuota;
   const modelText = applyModelQuota();
 
   if (!root._modelObserverAttached) {
     root._modelObserverAttached = true;
-    const obs = new MutationObserver(() => applyModelQuota());
+    const obs = new MutationObserver(() => {
+      if (root._applyModelQuota) root._applyModelQuota();
+    });
     obs.observe(footerLeft, { subtree: true, characterData: true, childList: true });
   }
 
@@ -563,14 +592,16 @@ function toView(d) {
     ctxIconColor = 'rgba(206, 168, 92, 0.88)';
   }
 
-  let gemini5h = '--%', geminiWk = '--%';
-  let gemini5hNum = 0, geminiWkNum = 0;
-  let claude5h = '--%', claudeWk = '--%';
-  let argon5h = '--%', argonWk = '--%';
-
+  const quotaSummaryGroups = [];
   let quotaHtml = '';
   for (const g of d.quotaGroups || []) {
+    const rawName = String(g.displayName || '').trim().toLowerCase();
     const title = formatGroupTitle(g.displayName);
+    const descMatch = String(g.description || '').match(/models within this group:\s*([^\n.]+)/i);
+    const modelsInGroup = descMatch ? descMatch[1].toLowerCase() : '';
+    let q5h = '--%';
+    let qWk = '--%';
+
     quotaHtml += '<div class="dk-q-group">';
     quotaHtml += '<div class="dk-q-title">' + title + '</div>';
     for (const b of g.buckets || []) {
@@ -587,22 +618,8 @@ function toView(d) {
       const pctLeft = Math.round((b.remainingFraction || 0) * 100);
       const pctStr = pctLeft + '%';
 
-      if (title === 'Gemini') {
-        if (b.window === '5h') {
-          gemini5h = pctStr;
-          gemini5hNum = pctLeft;
-        }
-        if (b.window === 'weekly') {
-          geminiWk = pctStr;
-          geminiWkNum = pctLeft;
-        }
-      } else if (title === 'Claude') {
-        if (b.window === '5h') claude5h = pctStr;
-        if (b.window === 'weekly') claudeWk = pctStr;
-      } else if (title.toLowerCase().includes('argon')) {
-        if (b.window === '5h') argon5h = pctStr;
-        if (b.window === 'weekly') argonWk = pctStr;
-      }
+      if (b.window === '5h') q5h = pctStr;
+      if (b.window === 'weekly') qWk = pctStr;
 
       quotaHtml += '<div class="dk-q-row">';
       quotaHtml += '  <span class="dk-q-label">' + baseLabel + '</span>';
@@ -611,6 +628,7 @@ function toView(d) {
       quotaHtml += '</div>';
     }
     quotaHtml += '</div>';
+    quotaSummaryGroups.push({ title, rawName, modelsInGroup, q5h, qWk });
   }
 
   return {
@@ -640,14 +658,7 @@ function toView(d) {
     valOut: outPct + '% · ' + fmtK(out),
     valThink: thinkPct + '% · ' + fmtK(think),
     valTurn0: turn0Pct + '% · ' + fmtK(turn0),
-    gemini5h,
-    geminiWk,
-    gemini5hNum,
-    geminiWkNum,
-    claude5h,
-    claudeWk,
-    argon5h,
-    argonWk,
+    quotaSummaryGroups,
     quotaHtml,
     instanceTs: INSTANCE_TS,
   };
