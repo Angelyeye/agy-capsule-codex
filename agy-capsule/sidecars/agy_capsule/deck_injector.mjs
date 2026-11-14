@@ -99,13 +99,15 @@ function pageMount(d) {
   }
 
   // Upgrade or initialize DOM structure in-place
-  if (root.getAttribute('data-deck-ver') !== '33') {
-    root.setAttribute('data-deck-ver', '33');
+  if (root.getAttribute('data-deck-ver') !== '39') {
+    root.setAttribute('data-deck-ver', '39');
     root.style.cssText = [
       'display: inline-flex',
       'align-items: center',
+      'flex-shrink: 0',
       'gap: 0px',
       'margin-left: 6px',
+      'margin-right: 6px',
       'font-size: 12.5px',
       // Match the promo's Source Han faces, with local-only cross-platform fallbacks.
       'font-family: "Source Han Sans CN", "思源黑体 CN", "Source Han Sans SC", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC", Arial, sans-serif',
@@ -151,6 +153,57 @@ function pageMount(d) {
         #deck-metrics-strip .dk-pill-quota {
           gap: 10px;
         }
+        #deck-metrics-strip.dk-hide-wk [data-el="pairWk"],
+        #deck-metrics-strip.dk-hide-5h [data-el="pair5h"] {
+          display: none;
+        }
+        #deck-metrics-strip.dk-hide-wk .dk-pill-quota,
+        #deck-metrics-strip.dk-hide-5h .dk-pill-quota {
+          gap: 0;
+        }
+        #deck-metrics-strip.dk-hide-qval [data-el="grpQuota"] .dk-val {
+          display: none;
+        }
+        #deck-metrics-strip.dk-hide-qval [data-el="grpQuota"] .dk-q-pair {
+          gap: 0;
+        }
+        #deck-metrics-strip.dk-hide-cval [data-el="grpCtx"] .dk-val {
+          display: none;
+        }
+        #deck-metrics-strip.dk-hide-cval [data-el="grpCtx"] .dk-pill {
+          gap: 0;
+        }
+        #deck-metrics-strip.dk-hide-quota [data-el="grpQuota"] {
+          display: none;
+        }
+        #deck-metrics-strip.dk-hide-all {
+          display: none !important;
+        }
+        .dk-fl-squeezed {
+          min-width: 0 !important;
+          flex-shrink: 1 !important;
+        }
+        .dk-model-squeezed {
+          min-width: 0 !important;
+          flex: 0 1 auto !important;
+          overflow: hidden !important;
+          max-width: 100% !important;
+        }
+        .dk-model-squeezed .dk-squeeze-box,
+        .dk-model-squeezed .dk-squeeze-item {
+          min-width: 0 !important;
+          max-width: 100% !important;
+          overflow: hidden !important;
+          text-overflow: ellipsis !important;
+          white-space: nowrap !important;
+        }
+        .dk-model-squeezed .dk-squeeze-box,
+        .dk-model-squeezed-hard .dk-squeeze-item {
+          flex-shrink: 1 !important;
+        }
+        .dk-model-squeezed svg {
+          flex-shrink: 0 !important;
+        }
         #deck-metrics-strip .dk-q-pair {
           display: inline-flex;
           align-items: center;
@@ -194,21 +247,63 @@ function pageMount(d) {
           width: max-content;
           min-width: 176px;
         }
+        #deck-metrics-strip .dk-cache-bar {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 12px;
+          font-size: 13.5px;
+          line-height: 1.35;
+          margin-top: 2px;
+          padding-bottom: 5px;
+          margin-bottom: 7.5px;
+          border-bottom: 1px solid rgba(142, 142, 147, 0.24);
+          border-bottom: 1px solid color-mix(in srgb, var(--foreground, #18181b) 17%, transparent);
+        }
+        #deck-metrics-strip .dk-cache-left {
+          display: inline-flex;
+          align-items: center;
+          gap: 7px;
+          font-weight: 500;
+          color: var(--foreground, #18181b);
+          color: color-mix(in srgb, var(--foreground, #18181b) 88%, transparent);
+          white-space: nowrap;
+        }
+        #deck-metrics-strip .dk-cache-pct {
+          margin-left: -2px;
+          font-variant-numeric: tabular-nums;
+          font-size: 13.5px;
+          white-space: nowrap;
+        }
+        #deck-metrics-strip .dk-cache-k {
+          text-align: right;
+          color: var(--muted-foreground, #8e8e93);
+          white-space: nowrap;
+          font-variant-numeric: tabular-nums;
+          font-size: 13.5px;
+          font-weight: 400;
+        }
+        #deck-metrics-strip .dk-cache-k:empty {
+          display: none;
+        }
         #deck-metrics-strip .dk-summary-row {
           display: flex;
           justify-content: space-between;
           align-items: baseline;
-          margin-bottom: 6px;
+          gap: 12px;
+          margin-bottom: 6.5px;
         }
         #deck-metrics-strip .dk-used-pct {
           font-size: 13.5px;
-          font-weight: 600;
+          font-weight: 500;
           color: var(--foreground, #18181b);
           color: color-mix(in srgb, var(--foreground, #18181b) 88%, transparent);
         }
         #deck-metrics-strip .dk-used-frac {
           font-size: 13.5px;
-          color: var(--muted-foreground, #8e8e93);
+          font-weight: 500;
+          color: var(--foreground, #18181b);
+          color: color-mix(in srgb, var(--foreground, #18181b) 88%, transparent);
           font-variant-numeric: tabular-nums;
         }
         #deck-metrics-strip .dk-track {
@@ -220,7 +315,7 @@ function pageMount(d) {
           display: flex;
           gap: 1.5px;
           overflow: hidden;
-          margin-bottom: 10px;
+          margin-bottom: 8.5px;
         }
         #deck-metrics-strip .dk-seg {
           height: 100%;
@@ -279,10 +374,11 @@ function pageMount(d) {
         }
         #deck-metrics-strip .dk-q-title {
           font-size: 13.5px;
-          font-weight: 600;
+          font-weight: 500;
+          line-height: 1.25;
           color: var(--foreground, #18181b);
           color: color-mix(in srgb, var(--foreground, #18181b) 88%, transparent);
-          margin-bottom: 3px;
+          margin-bottom: 0px;
         }
         #deck-metrics-strip .dk-q-row {
           display: grid;
@@ -291,7 +387,7 @@ function pageMount(d) {
           column-gap: 8px;
           font-size: 13.5px;
           font-variant-numeric: tabular-nums;
-          margin-bottom: 3px;
+          margin-bottom: 2px;
         }
         #deck-metrics-strip .dk-q-row:last-child {
           margin-bottom: 0;
@@ -316,12 +412,16 @@ function pageMount(d) {
       </style>
 
       <!-- Context Capsule + Popover -->
-      <div class="dk-grp">
+      <div class="dk-grp" data-el="grpCtx">
         <div class="dk-pill">
           <svg class="dk-svg" data-el="ctxIconSvg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/></svg>
           <span class="dk-val" data-k="pillCtx">--%</span>
         </div>
         <div class="dk-pop dk-ctx-pop">
+          <div class="dk-cache-bar" data-el="rowCacheHit">
+            <div class="dk-cache-left"><span class="dk-dot" data-el="dotCached" style="display:inline-flex;align-items:center;justify-content:center;background:transparent"></span><span>Cache</span><span class="dk-cache-pct" data-k="valCacheHit" data-el="valCacheHitEl">0%</span></div>
+            <div class="dk-cache-k" data-k="valCacheHitK"></div>
+          </div>
           <div class="dk-summary-row">
             <div class="dk-used-pct" data-k="usedPctText">0% used</div>
             <div class="dk-used-frac" data-k="usedFrac">0 / 256k</div>
@@ -333,11 +433,6 @@ function pageMount(d) {
             <div class="dk-seg" data-el="segOut" style="width: 0%; background: #e86a24"></div>
           </div>
           <div class="dk-list">
-            <div class="dk-item-row" data-el="rowCacheHit">
-              <div class="dk-item-left"><span class="dk-dot" data-el="dotCached" style="display:inline-flex;align-items:center;justify-content:center;background:transparent"></span><span>Cache</span></div>
-              <div class="dk-item-pct" data-k="valCacheHit" data-el="valCacheHitEl">0%</div>
-              <div class="dk-item-k" data-k="valCacheHitK"></div>
-            </div>
             <div class="dk-item-row">
               <div class="dk-item-left"><span class="dk-dot" style="background:#d4940a"></span><span>Turn0</span></div>
               <div class="dk-item-pct" data-k="valTurn0Pct">0%</div>
@@ -363,13 +458,13 @@ function pageMount(d) {
       </div>
 
       <!-- Merged Quota Capsule (5h + Weekly) + Popover -->
-      <div class="dk-grp">
+      <div class="dk-grp" data-el="grpQuota">
         <div class="dk-pill dk-pill-quota">
-          <span class="dk-q-pair">
+          <span class="dk-q-pair" data-el="pair5h">
             <svg class="dk-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>
             <span class="dk-val" data-k="pill5h">--%</span>
           </span>
-          <span class="dk-q-pair">
+          <span class="dk-q-pair" data-el="pairWk">
             <svg class="dk-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
             <span class="dk-val" data-k="pillWk">--%</span>
           </span>
@@ -377,6 +472,24 @@ function pageMount(d) {
         <div class="dk-pop dk-quota-pop" data-el="quotaPop"></div>
       </div>
     `;
+
+    for (const grp of root.querySelectorAll('.dk-grp')) {
+      grp.addEventListener('mouseenter', () => {
+        const pop = grp.querySelector('.dk-pop');
+        if (!pop) return;
+        pop.style.left = '';
+        const pr = pop.getBoundingClientRect();
+        if (pr.width <= 0) return;
+        const maxRight = window.innerWidth - 8;
+        if (pr.right > maxRight) {
+          pop.style.left = Math.max(-pr.left + 8, maxRight - pr.right) + 'px';
+        }
+      });
+      grp.addEventListener('mouseleave', () => {
+        const pop = grp.querySelector('.dk-pop');
+        if (pop) pop.style.left = '';
+      });
+    }
   }
 
   if (!footerLeft.contains(root)) {
@@ -449,19 +562,181 @@ function pageMount(d) {
       matched = groups.find((g) => g.title === 'Gemini') || groups[0] || null;
     }
 
-    setK('pill5h', matched ? matched.q5h || '--%' : '--%');
-    setK('pillWk', matched ? matched.qWk || '--%' : '--%');
+    const q5hVal = matched ? matched.q5h || '--%' : '--%';
+    const qWkVal = matched ? matched.qWk || '--%' : '--%';
+    setK('pill5h', q5hVal);
+    setK('pillWk', qWkVal);
+    root.dataset.preferWkOnly = q5hVal === '--%' && qWkVal !== '--%' ? '1' : '0';
     return mt;
   };
   root._applyModelQuota = applyModelQuota;
   const modelText = applyModelQuota();
 
-  if (!root._modelObserverAttached) {
-    root._modelObserverAttached = true;
-    const obs = new MutationObserver(() => {
+  const getNativeVisualInfo = (el) => {
+    let maxR = -Infinity;
+    let svgClipped = false;
+    const walk = (node, parentClip) => {
+      const cs = getComputedStyle(node);
+      if (cs.display === 'none') return;
+      if (cs.display === 'contents') {
+        for (const child of node.children) walk(child, parentClip);
+        return;
+      }
+      const tag = node.tagName ? node.tagName.toLowerCase() : '';
+      const r = node.getBoundingClientRect();
+      if (r.width > 0 || r.height > 0) {
+        if (tag === 'svg') {
+          if (parentClip < Infinity && r.width > 0 && r.right > parentClip + 1) {
+            svgClipped = true;
+          }
+          const visR = Math.min(r.right, parentClip);
+          if (visR > maxR) maxR = visR;
+          return;
+        }
+        const visR = Math.min(r.right, parentClip);
+        if (visR > maxR) maxR = visR;
+        const ownClip = cs.overflowX === 'hidden' || cs.overflowX === 'clip' ? r.right : Infinity;
+        const nextClip = Math.min(parentClip, ownClip);
+        if (cs.overflowX === 'visible' && node.scrollWidth > node.clientWidth + 1) {
+          const overflowR = Math.min(r.left + node.scrollWidth, parentClip);
+          if (overflowR > maxR) maxR = overflowR;
+        }
+        for (const child of node.children) walk(child, nextClip);
+      } else {
+        for (const child of node.children) walk(child, parentClip);
+      }
+    };
+    walk(el, Infinity);
+    return { maxR, svgClipped };
+  };
+
+  const adjustLayout = () => {
+    const footer = footerLeft.parentElement;
+    const nativeChildren = Array.from(footerLeft.children).filter((c) => c !== root);
+    const modelTargets = nativeChildren.filter((c) => c.textContent && c.textContent.trim().length > 0);
+
+    const isClippedEl = (el) => {
+      if (el instanceof SVGElement) return false;
+      if (el.scrollWidth <= el.clientWidth + 1) return false;
+      const r = el.getBoundingClientRect();
+      return r.height > 0 && el.getClientRects().length > 0;
+    };
+
+    const isNativeSqueezed = () => {
+      for (const c of nativeChildren) {
+        if (isClippedEl(c)) return true;
+        for (const node of c.querySelectorAll('*')) {
+          if (isClippedEl(node)) return true;
+        }
+      }
+      return false;
+    };
+
+    const syncSqueezeClasses = (compress) => {
+      footerLeft.classList.toggle('dk-fl-squeezed', !!compress);
+      for (const mt of modelTargets) {
+        mt.classList.toggle('dk-model-squeezed', !!compress);
+        mt.classList.toggle('dk-model-squeezed-hard', compress === 'hard');
+        if (!compress) {
+          mt.classList.remove('dk-squeeze-box', 'dk-squeeze-item');
+          for (const el of mt.querySelectorAll('.dk-squeeze-box, .dk-squeeze-item')) {
+            el.classList.remove('dk-squeeze-box', 'dk-squeeze-item');
+          }
+          continue;
+        }
+        const tag = (el) => {
+          const txt = el.textContent ? el.textContent.trim() : '';
+          if (!txt) {
+            el.classList.remove('dk-squeeze-box', 'dk-squeeze-item');
+            return;
+          }
+          const isBoxOrLong = el.children.length > 0 || txt.length > 5;
+          el.classList.toggle('dk-squeeze-box', isBoxOrLong);
+          el.classList.toggle('dk-squeeze-item', !isBoxOrLong);
+        };
+        tag(mt);
+        for (const el of mt.querySelectorAll('div, span, button, a, p, label')) tag(el);
+      }
+    };
+
+    const compactCls = root.dataset.preferWkOnly === '1' ? 'dk-hide-5h' : 'dk-hide-wk';
+    const modeClasses = ['dk-hide-wk', 'dk-hide-5h', 'dk-hide-qval', 'dk-hide-cval', 'dk-hide-quota', 'dk-hide-all'];
+    const modes = [
+      { classes: [], compress: '' },
+      { classes: [compactCls], compress: '' },
+      { classes: [compactCls, 'dk-hide-qval'], compress: '' },
+      { classes: [compactCls, 'dk-hide-qval', 'dk-hide-cval'], compress: '' },
+      { classes: [compactCls, 'dk-hide-qval', 'dk-hide-cval'], compress: 'soft' },
+      { classes: [compactCls, 'dk-hide-qval', 'dk-hide-cval'], compress: 'hard' },
+      { classes: ['dk-hide-cval', 'dk-hide-quota'], compress: 'hard' },
+      { classes: ['dk-hide-all'], compress: '' },
+    ];
+
+    for (const mode of modes) {
+      for (const cls of modeClasses) {
+        root.classList.toggle(cls, mode.classes.includes(cls));
+      }
+      syncSqueezeClasses(mode.compress);
+      if (mode.classes.includes('dk-hide-all')) break;
+
+      const rootRect = root.getBoundingClientRect();
+      if (rootRect.width <= 0) continue;
+
+      const rightControls = footer
+        ? Array.from(footer.children).filter((el) => el !== footerLeft && el.getBoundingClientRect().width > 0)
+        : [];
+      const rightMinLeft =
+        rightControls.length > 0
+          ? Math.min(...rightControls.map((el) => el.getBoundingClientRect().left))
+          : Infinity;
+      const footerCs = footer ? getComputedStyle(footer) : null;
+      const footerRightEdge = footer
+        ? footer.getBoundingClientRect().right - (parseFloat(footerCs.paddingRight) || 0)
+        : Infinity;
+      const flCs = getComputedStyle(footerLeft);
+      const flClipRight = flCs.overflowX !== 'visible' ? footerLeft.getBoundingClientRect().right + 1 : Infinity;
+      const minRightBound = Math.min(rightMinLeft, footerRightEdge, flClipRight);
+
+      let nativeMaxRight = -Infinity;
+      let anySvgClipped = false;
+      for (const c of nativeChildren) {
+        const info = getNativeVisualInfo(c);
+        if (info.maxR > nativeMaxRight) nativeMaxRight = info.maxR;
+        if (info.svgClipped) anySvgClipped = true;
+      }
+
+      const fitsRight =
+        rootRect.right <= rightMinLeft - 4 &&
+        rootRect.right <= footerRightEdge + 1 &&
+        rootRect.right <= flClipRight;
+      const fitsLeft = nativeMaxRight === -Infinity || rootRect.left >= nativeMaxRight + 3;
+      const crowdedModel = !mode.compress && minRightBound - rootRect.right < 24 && isNativeSqueezed();
+      if (fitsRight && fitsLeft && !(mode.compress && anySvgClipped) && !crowdedModel) break;
+    }
+  };
+  root._adjustLayout = adjustLayout;
+
+  if (root._observedFooterLeft !== footerLeft) {
+    if (root._modelObserver) root._modelObserver.disconnect();
+    if (root._resizeObserver) root._resizeObserver.disconnect();
+    root._observedFooterLeft = footerLeft;
+
+    const obs = new MutationObserver((mutations) => {
+      if (mutations.every((m) => root.contains(m.target))) return;
       if (root._applyModelQuota) root._applyModelQuota();
+      if (root._adjustLayout) root._adjustLayout();
     });
     obs.observe(footerLeft, { subtree: true, characterData: true, childList: true });
+    root._modelObserver = obs;
+
+    if (typeof ResizeObserver !== 'undefined') {
+      const ro = new ResizeObserver(() => {
+        if (root._adjustLayout) root._adjustLayout();
+      });
+      if (footerLeft.parentElement) ro.observe(footerLeft.parentElement);
+      ro.observe(footerLeft);
+      root._resizeObserver = ro;
+    }
   }
 
   // Update progress bar & cache cooling indicator
@@ -496,6 +771,8 @@ function pageMount(d) {
   if (quotaPop && quotaPop.innerHTML !== d.quotaHtml) {
     quotaPop.innerHTML = d.quotaHtml;
   }
+
+  adjustLayout();
 
   return 'ok:' + modelText;
 }
@@ -575,8 +852,8 @@ function toView(d) {
 
   const idleSec = ctx > 0 && d.lastStepEpochMs ? Math.max(0, Math.floor((Date.now() - d.lastStepEpochMs) / 1000)) : 0;
   let cacheIconSvg =
-    '<svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="rgba(142,142,147,0.85)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 6.5 4.8 9.2 10 3"/></svg>';
-  let cacheValColor = 'var(--muted-foreground, #8e8e93)';
+    '<svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 6.5 4.8 9.2 10 3"/></svg>';
+  let cacheValColor = '';
   let cacheValDeco = 'none';
   let cacheValOp = '1';
   let valCacheHit = cacheHitPct + '%';
@@ -704,6 +981,8 @@ async function tick(inspect) {
     }
   }
 }
+
+export { pageMount, toView };
 
 export function startDeckInjector(inspect) {
   let busy = false;

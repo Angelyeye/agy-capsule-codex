@@ -125,6 +125,19 @@ function parseGenRow(idx, data) {
     }
   }
 
+  let lastStepIndex = -1;
+  if (m1.has(20)) {
+    for (const kvBuf of m1.get(20)) {
+      const kv = parsePbMap(kvBuf);
+      const key = kv.has(1) ? kv.get(1)[0].toString('utf8') : '';
+      if (key === 'last_step_index' && kv.has(2)) {
+        const n = Number(kv.get(2)[0].toString('utf8'));
+        if (Number.isFinite(n)) lastStepIndex = n;
+        break;
+      }
+    }
+  }
+
   return {
     turn: idx,
     uncachedIn,
@@ -133,6 +146,7 @@ function parseGenRow(idx, data) {
     outTokens,
     thinkTokens,
     maxContextTokens,
+    lastStepIndex,
   };
 }
 
@@ -155,7 +169,7 @@ function resolveLatestConvId(preferredId) {
 
 async function makeEmptyContextResult() {
   return {
-    uiVersion: 18,
+    uiVersion: 19,
     cachedIn: 0,
     uncachedIn: 0,
     contextTokens: 0,
@@ -196,9 +210,11 @@ async function inspectConversation(convId, exact = false) {
   const dbPath = join(CONV_DIR, `${targetId}.db`);
   const db = new DatabaseSync(dbPath, { readOnly: true });
   let rawRows = [];
+  let cpRows = [];
   let lastStepEpochMs = 0;
   try {
     rawRows = db.prepare('SELECT idx, data FROM gen_metadata ORDER BY idx ASC').all();
+    cpRows = db.prepare('SELECT idx FROM steps WHERE step_type = 23 ORDER BY idx DESC').all();
     const stepRow = db.prepare('SELECT metadata FROM steps ORDER BY idx DESC LIMIT 1').get();
     if (stepRow?.metadata) {
       const sm = parsePbMap(Buffer.from(stepRow.metadata));
@@ -219,8 +235,6 @@ async function inspectConversation(convId, exact = false) {
   }
 
   const turns = [];
-  let totalOutputTokens = 0;
-  let totalThinkingTokens = 0;
   let maxContextTokens = 256000;
 
   for (const row of rawRows) {
@@ -229,9 +243,25 @@ async function inspectConversation(convId, exact = false) {
     if (parsed.maxContextTokens > 0) {
       maxContextTokens = parsed.maxContextTokens;
     }
-    totalOutputTokens += parsed.outTokens;
-    totalThinkingTokens += parsed.thinkTokens;
     turns.push(parsed);
+  }
+
+  // Start accumulating from the latest compaction checkpoint so pre-compaction
+  // output/thinking tokens do not inflate the active context breakdown.
+  let epochStart = 0;
+  if (turns.length > 0) {
+    for (const cp of cpRows) {
+      const postIdx = turns.findIndex((t) => t.lastStepIndex >= cp.idx);
+      if (postIdx >= 0) {
+        epochStart = postIdx;
+        break;
+      }
+    }
+    for (let i = epochStart + 1; i < turns.length; i++) {
+      if (turns[i].contextTokens < turns[i - 1].contextTokens * 0.7) {
+        epochStart = i;
+      }
+    }
   }
 
   const latest = turns[turns.length - 1] || {
@@ -244,11 +274,26 @@ async function inspectConversation(convId, exact = false) {
   if (turns.length === 0 || latest.contextTokens === 0) {
     lastStepEpochMs = 0;
   }
-  const turn0Tokens = turns[0]?.contextTokens || 0;
+
+  // latest.contextTokens is the prompt sent *before* latest generated its output/thinking,
+  // so only accumulate prior turns within the active compaction epoch.
+  let rawOut = 0;
+  let rawThink = 0;
+  for (let i = epochStart; i < turns.length - 1; i++) {
+    rawOut += turns[i].outTokens;
+    rawThink += turns[i].thinkTokens;
+  }
+
+  const turn0Tokens = Math.min(turns[epochStart]?.contextTokens || 0, latest.contextTokens);
+  const availGen = Math.max(0, latest.contextTokens - turn0Tokens);
+  const genSum = rawOut + rawThink;
+  const genScale = genSum > availGen && genSum > 0 ? availGen / genSum : 1;
+  const totalOutputTokens = Math.round(rawOut * genScale);
+  const totalThinkingTokens = Math.round(rawThink * genScale);
   const quotaGroups = await fetchQuotaGroups();
 
   return {
-    uiVersion: 18,
+    uiVersion: 19,
     cachedIn: latest.cachedIn,
     uncachedIn: latest.uncachedIn,
     contextTokens: latest.contextTokens,
@@ -293,6 +338,7 @@ const UI_HTML = `<!DOCTYPE html>
       display: flex;
       justify-content: space-between;
       align-items: baseline;
+      gap: 12px;
       margin-bottom: 6px;
     }
     .used-pct {
@@ -578,7 +624,7 @@ const UI_HTML = `<!DOCTYPE html>
         const res = await fetch('/api/context' + qStr, { method: 'GET', headers });
         const d = await res.json();
         if (d.error) return;
-        if (d.uiVersion && d.uiVersion !== 18) {
+        if (d.uiVersion && d.uiVersion !== 19) {
           window.location.reload();
           return;
         }
