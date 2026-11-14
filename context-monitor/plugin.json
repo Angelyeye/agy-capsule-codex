@@ -6,7 +6,7 @@
   "logo": "assets/logo.svg",
   "suggestedPrompts": [
     "Check current context token usage with /ctx",
-    "Open the Context Monitor side panel",
+    "Open the AGY Capsule side panel",
     "Analyze token growth and cache hit rate in this session"
   ]
 }

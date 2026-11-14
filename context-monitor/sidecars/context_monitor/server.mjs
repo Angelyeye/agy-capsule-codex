@@ -268,7 +268,7 @@ const UI_HTML = `<!DOCTYPE html>
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Context & Usage</title>
+  <title>AGY Capsule</title>
   <script src="/preload.js"></script>
   <style>
     * { box-sizing: border-box; }

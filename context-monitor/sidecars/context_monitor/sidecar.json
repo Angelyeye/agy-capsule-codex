@@ -4,16 +4,16 @@
     "server.mjs"
   ],
   "description": "Real-time context window and token usage monitor reading ground-truth API telemetry from local conversation databases",
-  "display_name": "Context Monitor",
+  "display_name": "AGY Capsule",
   "has_web_ui": true,
   "restart_policy": "always",
   "ui_config": {
-    "display_name": "Context Monitor",
+    "display_name": "AGY Capsule",
     "views": [
       {
         "entrypoint": "SIDECAR_UI_ENTRYPOINT_AUX_PANE",
         "path": "/",
-        "title": "Context Monitor"
+        "title": "AGY Capsule"
       }
     ]
   }
