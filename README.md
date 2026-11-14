@@ -24,7 +24,7 @@ Antigravity 输入框底栏的上下文与配额胶囊。
 1. 将 [`agy-capsule`](./agy-capsule) 文件夹复制到 Antigravity 插件目录：
    - **Windows**: `%USERPROFILE%\.gemini\config\plugins\agy-capsule`
    - **macOS / Linux**: `~/.gemini/config/plugins/agy-capsule`
-2. 在 Antigravity 的 **Plugins** 面板启用 **agy-capsule**（支持 `/ctx` 命令）。
+2. 在 Antigravity 的 **Plugins** 面板启用 **agy-capsule**。
 
 ## 声明
 

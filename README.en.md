@@ -24,7 +24,7 @@ Context and quota capsules in the Antigravity composer footer.
 1. Copy the [`agy-capsule`](./agy-capsule) folder into the Antigravity plugins directory:
    - **Windows**: `%USERPROFILE%\.gemini\config\plugins\agy-capsule`
    - **macOS / Linux**: `~/.gemini/config/plugins/agy-capsule`
-2. Enable **agy-capsule** in Antigravity's **Plugins** panel (includes the `/ctx` command).
+2. Enable **agy-capsule** in Antigravity's **Plugins** panel.
 
 ## Disclaimer & Testing Status
 

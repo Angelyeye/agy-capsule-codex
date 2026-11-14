@@ -5,7 +5,6 @@
   "description": "Real-time context window and token usage monitor reading ground-truth API telemetry from local conversation databases, with automatic compaction detection.",
   "logo": "logo.svg",
   "suggestedPrompts": [
-    "Check current context token usage with /ctx",
     "Check cache status and remaining model quotas",
     "Analyze token growth and cache hit rate in this session"
   ]
