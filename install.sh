@@ -14,5 +14,5 @@ mkdir -p "$HOME/.gemini/config/plugins"
 rm -rf "$DST_DIR"
 cp -R "$SRC_DIR" "$DST_DIR"
 
-echo "[成功] AGY Capsule 已安装到: $DST_DIR"
+echo "[成功] agy-capsule 已安装到: $DST_DIR"
 echo "请重启 Antigravity 客户端以启用底部上下文与额度胶囊。"

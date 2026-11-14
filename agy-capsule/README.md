@@ -1,4 +1,4 @@
-# AGY Capsule (`agy-capsule`)
+# agy-capsule
 
 Real-time context window and token usage monitor for Antigravity Desktop & IDE.
 

@@ -1,7 +1,7 @@
 @echo off
 chcp 65001 >nul
 echo ====================================================
-echo   AGY Capsule 一键安装脚本
+echo   agy-capsule 一键安装脚本
 echo ====================================================
 echo.
 
@@ -27,7 +27,7 @@ if %ERRORLEVEL% NEQ 0 (
 )
 
 echo.
-echo [成功] AGY Capsule 插件已安装到:
+echo [成功] agy-capsule 插件已安装到:
 echo        %DST_DIR%
 echo.
 echo 下一步:

@@ -1,12 +1,12 @@
 {
   "name": "agy-capsule",
-  "displayName": "AGY Capsule",
+  "displayName": "agy-capsule",
   "version": "1.0.0",
   "description": "Real-time context window and token usage monitor reading ground-truth API telemetry from local conversation databases, with automatic compaction detection.",
   "logo": "assets/logo.svg",
   "suggestedPrompts": [
     "Check current context token usage with /ctx",
-    "Open the AGY Capsule side panel",
+    "Open the agy-capsule side panel",
     "Analyze token growth and cache hit rate in this session"
   ]
 }
