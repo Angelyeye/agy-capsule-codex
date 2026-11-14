@@ -1,5 +1,5 @@
 {
-  "name": "context-monitor",
+  "name": "agy-capsule",
   "displayName": "AGY Capsule",
   "version": "1.0.0",
   "description": "Real-time context window and token usage monitor reading ground-truth API telemetry from local conversation databases, with automatic compaction detection.",

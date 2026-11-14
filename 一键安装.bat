@@ -1,12 +1,12 @@
 @echo off
 chcp 65001 >nul
 echo ====================================================
-echo   AGY Capsule (Context Monitor) 一键安装脚本
+echo   AGY Capsule 一键安装脚本
 echo ====================================================
 echo.
 
-set "SRC_DIR=%~dp0context-monitor"
-set "DST_DIR=%USERPROFILE%\.gemini\config\plugins\context-monitor"
+set "SRC_DIR=%~dp0agy-capsule"
+set "DST_DIR=%USERPROFILE%\.gemini\config\plugins\agy-capsule"
 
 if not exist "%SRC_DIR%\plugin.json" (
     echo [错误] 未找到 "%SRC_DIR%\plugin.json"，请确认在仓库完整目录中运行本脚本！

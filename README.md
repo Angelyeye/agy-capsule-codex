@@ -17,9 +17,9 @@ Antigravity 输入框底栏的上下文与配额胶囊。
 
 ## 安装
 
-1. 将 [`context-monitor`](./context-monitor) 文件夹复制到 Antigravity 插件目录：
-   - **Windows**: `%USERPROFILE%\.gemini\config\plugins\context-monitor`
-   - **macOS / Linux**: `~/.gemini/config/plugins/context-monitor`
+1. 将 [`agy-capsule`](./agy-capsule) 文件夹复制到 Antigravity 插件目录：
+   - **Windows**: `%USERPROFILE%\.gemini\config\plugins\agy-capsule`
+   - **macOS / Linux**: `~/.gemini/config/plugins/agy-capsule`
 2. 在 Antigravity 的 **Plugins** 面板启用 **AGY Capsule**（支持 `/ctx` 命令）。
 
 ## License
