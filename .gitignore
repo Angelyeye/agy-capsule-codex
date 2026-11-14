@@ -3,3 +3,9 @@ __pycache__/
 .DS_Store
 Thumbs.db
 *.tmp
+
+# Local promotional animation project
+/promo/
+
+# Local preview renders and scratch files
+/tmp/

@@ -3,7 +3,7 @@
   "displayName": "agy-capsule",
   "version": "1.0.0",
   "description": "Real-time context window and token usage monitor reading ground-truth API telemetry from local conversation databases, with automatic compaction detection.",
-  "logo": "assets/logo.svg",
+  "logo": "logo.svg",
   "suggestedPrompts": [
     "Check current context token usage with /ctx",
     "Check cache status and remaining model quotas",

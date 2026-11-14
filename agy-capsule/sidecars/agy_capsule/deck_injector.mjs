@@ -99,8 +99,8 @@ function pageMount(d) {
   }
 
   // Upgrade or initialize DOM structure in-place
-  if (root.getAttribute('data-deck-ver') !== '28') {
-    root.setAttribute('data-deck-ver', '28');
+  if (root.getAttribute('data-deck-ver') !== '29') {
+    root.setAttribute('data-deck-ver', '29');
     root.style.cssText = [
       'display: inline-flex',
       'align-items: center',
@@ -119,7 +119,8 @@ function pageMount(d) {
         #deck-metrics-strip .dk-grp {
           display: inline-flex;
           align-items: center;
-          position: relative;
+          /* Both popovers anchor to the shared metrics strip. */
+          position: static;
         }
         #deck-metrics-strip .dk-pill {
           display: inline-flex;
