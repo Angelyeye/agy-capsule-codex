@@ -17,6 +17,7 @@ Context and quota capsules in the Antigravity composer footer.
 - **Token breakdown**: Hover to see the proportions and token counts for `Turn0`, `Read`, `Think`, and `Write`.
 - **Cache expiry alerts**: Turn yellow 3 minutes after the last turn with a countdown (`~1m`), and turn red at 4 minutes to mark `Cache` as expired.
 - **Multi-model quota panel**: Automatically match the model selected in the footer (such as `Gemini`, `Claude`, `Argon`, or `Carbon`). Hover to see each group's remaining 5h and weekly quotas, plus reset countdowns.
+- **Responsive narrow layout**: Degrades progressively as the footer narrows (hide Weekly quota first, keep icons with hover popovers, then ellipsis-truncate the model selector) to prevent overlap.
 - **Local font fallbacks**: Prefer Source Han Sans, falling back to the system UI font when unavailable; no font downloads or extra installation required.
 - **Light / dark adaptation & cross-version compatibility**: Reuse the host's CSS variables directly; mount via a native Sidecar and CDP without modifying client source code, so it keeps working after client updates.
 
@@ -31,7 +32,6 @@ Context and quota capsules in the Antigravity composer footer.
 
 - **Cache expiry is an estimate**: The cache status indicator (yellow warning at 3 minutes / red expired at 4 minutes) is estimated locally based on elapsed time since the last turn and is for reference only; actual cache hits depend on the server.
 - **Tested environments & feedback**: Currently tested only on **Windows + Pro plan**. Testing, feedback, and PRs on **macOS** and **Ultra plan** environments are very welcome!
-- The Gemini mascot illustration is by [ZipZipPipe](https://space.bilibili.com/4168597); related character assets are licensed under **CC BY-NC-SA 4.0 (Attribution-NonCommercial-ShareAlike)**.
 
 ## License
 
