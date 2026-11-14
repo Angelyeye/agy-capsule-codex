@@ -17,6 +17,7 @@ Context and quota capsules in the Antigravity composer footer.
 - **Token breakdown**: Hover to see the proportions and token counts for `Turn0`, `Read`, `Think`, and `Write`.
 - **Cache expiry alerts**: Turn yellow 3 minutes after the last turn, with a countdown (`~1m`), then show a red indicator when the cache expires at 4 minutes.
 - **Multi-model quota panel**: Automatically match the model selected in the footer (such as `Gemini`, `Claude`, `Argon`, or `Carbon`). Hover to see each group's remaining 5h and weekly quotas, plus reset countdowns.
+- **Local font fallbacks**: Prefer Source Han Sans, then the system UI font. No font downloads or additional installation required.
 - **Light / dark adaptation & cross-version compatibility**: Reuse the host's CSS variables. Mount through a native Sidecar and CDP without modifying client source code, so the plugin can be used after client updates.
 
 ## Installation

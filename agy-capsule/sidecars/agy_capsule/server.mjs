@@ -273,7 +273,10 @@ const UI_HTML = `<!DOCTYPE html>
     body {
       margin: 0;
       padding: 12px 14px;
-      font-family: var(--font-sans, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
+      font-family: "Source Han Sans CN", "思源黑体 CN", "Source Han Sans SC", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
+      font-weight: 400;
+      font-variation-settings: normal;
+      font-variant-ligatures: normal;
       background: var(--background, #141414);
       color: var(--foreground, #ebebeb);
       font-size: 13.5px;
@@ -530,10 +533,14 @@ const UI_HTML = `<!DOCTYPE html>
       const root = document.getElementById('quota-root');
       if (!Array.isArray(groups) || groups.length === 0) return;
       let html = '';
+      const windowOrder = { '5h': 0, weekly: 1 };
       for (const g of groups) {
         html += '<div class="quota-group">';
         html += '<div class="quota-group-title">' + formatGroupTitle(g.displayName) + '</div>';
-        for (const b of (g.buckets || [])) {
+        const buckets = [...(g.buckets || [])].sort(
+          (a, b) => (windowOrder[a.window] ?? 2) - (windowOrder[b.window] ?? 2)
+        );
+        for (const b of buckets) {
           const baseLabel =
             b.window === 'weekly'
               ? 'Weekly'

@@ -99,15 +99,20 @@ function pageMount(d) {
   }
 
   // Upgrade or initialize DOM structure in-place
-  if (root.getAttribute('data-deck-ver') !== '30') {
-    root.setAttribute('data-deck-ver', '30');
+  if (root.getAttribute('data-deck-ver') !== '32') {
+    root.setAttribute('data-deck-ver', '32');
     root.style.cssText = [
       'display: inline-flex',
       'align-items: center',
       'gap: 0px',
       'margin-left: 6px',
       'font-size: 12.5px',
-      'font-family: var(--font-sans, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif)',
+      // Match the promo's Source Han faces, with local-only cross-platform fallbacks.
+      'font-family: "Source Han Sans CN", "思源黑体 CN", "Source Han Sans SC", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC", Arial, sans-serif',
+      'font-weight: 400',
+      'font-variation-settings: normal',
+      'font-variant-ligatures: normal',
+      'line-height: normal',
       'color: var(--secondary-foreground, var(--foreground, #3f3f46))',
       'user-select: none',
       'position: relative',
@@ -595,6 +600,7 @@ function toView(d) {
 
   const quotaSummaryGroups = [];
   let quotaHtml = '';
+  const windowOrder = { '5h': 0, weekly: 1 };
   for (const g of d.quotaGroups || []) {
     const rawName = String(g.displayName || '').trim().toLowerCase();
     const title = formatGroupTitle(g.displayName);
@@ -605,7 +611,10 @@ function toView(d) {
 
     quotaHtml += '<div class="dk-q-group">';
     quotaHtml += '<div class="dk-q-title">' + title + '</div>';
-    for (const b of g.buckets || []) {
+    const buckets = [...(g.buckets || [])].sort(
+      (a, b) => (windowOrder[a.window] ?? 2) - (windowOrder[b.window] ?? 2)
+    );
+    for (const b of buckets) {
       const baseLabel =
         b.window === 'weekly'
           ? 'Weekly'
