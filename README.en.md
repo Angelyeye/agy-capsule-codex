@@ -31,7 +31,7 @@ Context and quota capsules in the Antigravity composer footer.
 ## Notices
 
 - **Cache expiry is an estimate**: The cache status indicator (yellow warning at 3 minutes / red expired at 4 minutes) is estimated locally based on elapsed time since the last turn and is for reference only; actual cache hits depend on the server.
-- **Tested environments & feedback**: Currently tested only on **Windows + Pro plan**. Testing, feedback, and PRs on **macOS** and **Ultra plan** environments are very welcome!
+- **Tested environments & feedback**: Currently tested only on **Windows**. Testing, feedback, and PRs on **macOS** are very welcome!
 
 ## License
 
