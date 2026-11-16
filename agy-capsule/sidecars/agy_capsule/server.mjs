@@ -169,11 +169,11 @@ function resolveLatestConvId(preferredId) {
 
 async function makeEmptyContextResult() {
   return {
-    uiVersion: 19,
+    uiVersion: 20,
     cachedIn: 0,
     uncachedIn: 0,
     contextTokens: 0,
-    maxContextTokens: 256000,
+    maxContextTokens: 0,
     lastStepEpochMs: 0,
     turn0Tokens: 0,
     totalOutputTokens: 0,
@@ -235,14 +235,15 @@ async function inspectConversation(convId, exact = false) {
   }
 
   const turns = [];
-  let maxContextTokens = 256000;
+  let maxContextTokens = 0;
 
   for (const row of rawRows) {
     const parsed = parseGenRow(row.idx, row.data);
-    if (!parsed || parsed.contextTokens === 0) continue;
+    if (!parsed) continue;
     if (parsed.maxContextTokens > 0) {
       maxContextTokens = parsed.maxContextTokens;
     }
+    if (parsed.contextTokens === 0) continue;
     turns.push(parsed);
   }
 
@@ -293,7 +294,7 @@ async function inspectConversation(convId, exact = false) {
   const quotaGroups = await fetchQuotaGroups();
 
   return {
-    uiVersion: 19,
+    uiVersion: 20,
     cachedIn: latest.cachedIn,
     uncachedIn: latest.uncachedIn,
     contextTokens: latest.contextTokens,
@@ -477,7 +478,7 @@ const UI_HTML = `<!DOCTYPE html>
   <div class="panel">
     <div class="summary-row">
       <div class="used-pct" id="used-pct">0% used</div>
-      <div class="used-fraction" id="used-fraction">0 / 256k</div>
+      <div class="used-fraction" id="used-fraction">0 / --</div>
     </div>
 
     <div class="progress-track" id="progress-track">
@@ -624,12 +625,12 @@ const UI_HTML = `<!DOCTYPE html>
         const res = await fetch('/api/context' + qStr, { method: 'GET', headers });
         const d = await res.json();
         if (d.error) return;
-        if (d.uiVersion && d.uiVersion !== 19) {
+        if (d.uiVersion && d.uiVersion !== 20) {
           window.location.reload();
           return;
         }
 
-        const maxCtx = d.maxContextTokens || 256000;
+        const maxCtx = d.maxContextTokens || 0;
         const ctx = d.contextTokens || 0;
         const cached = d.cachedIn || 0;
         const out = d.totalOutputTokens || 0;
@@ -637,22 +638,24 @@ const UI_HTML = `<!DOCTYPE html>
         const turn0 = d.turn0Tokens || 0;
         const read = Math.max(0, ctx - turn0 - out - think);
 
-        const usedPct = maxCtx > 0 ? Math.round((ctx / maxCtx) * 100) : 0;
-        const usedPctExact = maxCtx > 0 ? Math.min(100, (ctx / maxCtx) * 100) : 0;
+        const hasMax = maxCtx > 0;
+        const usedPct = hasMax ? Math.round((ctx / maxCtx) * 100) : 0;
+        const usedPctExact = hasMax ? Math.min(100, (ctx / maxCtx) * 100) : 0;
         const compSum = read + out + think + turn0;
         const scale = compSum > 0 ? usedPctExact / compSum : 0;
 
-        const readPct = maxCtx > 0 ? Math.round((read / maxCtx) * 100) : 0;
-        const outPct = maxCtx > 0 ? Math.round((out / maxCtx) * 100) : 0;
-        const thinkPct = maxCtx > 0 ? Math.round((think / maxCtx) * 100) : 0;
-        const turn0Pct = maxCtx > 0 ? Math.round((turn0 / maxCtx) * 100) : 0;
+        const pctStr = (val) => (hasMax ? Math.round((val / maxCtx) * 100) + '%' : (ctx === 0 ? '0%' : '--%'));
+        const readPct = pctStr(read);
+        const outPct = pctStr(out);
+        const thinkPct = pctStr(think);
+        const turn0Pct = pctStr(turn0);
         const cacheHitPct = ctx > 0 ? Math.round((cached / ctx) * 100) : 0;
 
         const usedPctEl = document.getElementById('used-pct');
-        usedPctEl.textContent = usedPct + '% used';
+        usedPctEl.textContent = hasMax ? (usedPct + '% used') : (ctx === 0 ? '0% used' : '--% used');
 
-        document.getElementById('used-fraction').textContent = fmtK(ctx) + ' / ' + fmtK(maxCtx);
-        document.getElementById('used-fraction').title = fmtExact(ctx) + ' / ' + fmtExact(maxCtx) + ' tokens';
+        document.getElementById('used-fraction').textContent = fmtK(ctx) + ' / ' + (hasMax ? fmtK(maxCtx) : '--');
+        document.getElementById('used-fraction').title = fmtExact(ctx) + ' / ' + (hasMax ? fmtExact(maxCtx) : '--') + ' tokens';
 
         const dotCachedEl = document.getElementById('dot-cached');
         document.getElementById('seg-read').style.width = (read * scale).toFixed(2) + '%';
@@ -704,13 +707,13 @@ const UI_HTML = `<!DOCTYPE html>
           ? '0 / 0 cached · New conversation'
           : (fmtExact(cached) + ' / ' + fmtExact(ctx) + ' cached · Last turn ' + idleStr);
 
-        document.getElementById('val-turn0-pct').textContent = turn0Pct + '%';
+        document.getElementById('val-turn0-pct').textContent = turn0Pct;
         document.getElementById('val-turn0-k').textContent = fmtColK(turn0);
-        document.getElementById('val-read-pct').textContent = readPct + '%';
+        document.getElementById('val-read-pct').textContent = readPct;
         document.getElementById('val-read-k').textContent = fmtColK(read);
-        document.getElementById('val-think-pct').textContent = thinkPct + '%';
+        document.getElementById('val-think-pct').textContent = thinkPct;
         document.getElementById('val-think-k').textContent = fmtColK(think);
-        document.getElementById('val-out-pct').textContent = outPct + '%';
+        document.getElementById('val-out-pct').textContent = outPct;
         document.getElementById('val-out-k').textContent = fmtColK(out);
 
         if (d.quotaGroups) {

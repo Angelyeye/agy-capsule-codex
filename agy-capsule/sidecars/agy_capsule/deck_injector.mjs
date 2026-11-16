@@ -99,8 +99,8 @@ function pageMount(d) {
   }
 
   // Upgrade or initialize DOM structure in-place
-  if (root.getAttribute('data-deck-ver') !== '39') {
-    root.setAttribute('data-deck-ver', '39');
+  if (root.getAttribute('data-deck-ver') !== '40') {
+    root.setAttribute('data-deck-ver', '40');
     root.style.cssText = [
       'display: inline-flex',
       'align-items: center',
@@ -424,7 +424,7 @@ function pageMount(d) {
           </div>
           <div class="dk-summary-row">
             <div class="dk-used-pct" data-k="usedPctText">0% used</div>
-            <div class="dk-used-frac" data-k="usedFrac">0 / 256k</div>
+            <div class="dk-used-frac" data-k="usedFrac">0 / --</div>
           </div>
           <div class="dk-track">
             <div class="dk-seg" data-el="segTurn0" style="width: 0%; background: #d4940a"></div>
@@ -826,7 +826,7 @@ function formatGroupTitle(raw) {
 }
 
 function toView(d) {
-  const maxCtx = d.maxContextTokens || 256000;
+  const maxCtx = d.maxContextTokens || 0;
   const ctx = d.contextTokens || 0;
   const cached = d.cachedIn || 0;
   const out = d.totalOutputTokens || 0;
@@ -834,8 +834,9 @@ function toView(d) {
   const turn0 = d.turn0Tokens || 0;
   const read = Math.max(0, ctx - turn0 - out - think);
 
-  const usedPctRound = maxCtx > 0 ? Math.round((ctx / maxCtx) * 100) : 0;
-  const usedPctExact = maxCtx > 0 ? Math.min(100, (ctx / maxCtx) * 100) : 0;
+  const hasMax = maxCtx > 0;
+  const usedPctRound = hasMax ? Math.round((ctx / maxCtx) * 100) : 0;
+  const usedPctExact = hasMax ? Math.min(100, (ctx / maxCtx) * 100) : 0;
   const compSum = read + out + think + turn0;
   const scale = compSum > 0 ? usedPctExact / compSum : 0;
 
@@ -844,10 +845,11 @@ function toView(d) {
   const segThinkW = (think * scale).toFixed(2) + '%';
   const segTurn0W = (turn0 * scale).toFixed(2) + '%';
 
-  const readPct = maxCtx > 0 ? Math.round((read / maxCtx) * 100) : 0;
-  const outPct = maxCtx > 0 ? Math.round((out / maxCtx) * 100) : 0;
-  const thinkPct = maxCtx > 0 ? Math.round((think / maxCtx) * 100) : 0;
-  const turn0Pct = maxCtx > 0 ? Math.round((turn0 / maxCtx) * 100) : 0;
+  const pctStr = (val) => (hasMax ? Math.round((val / maxCtx) * 100) + '%' : (ctx === 0 ? '0%' : '--%'));
+  const readPct = pctStr(read);
+  const outPct = pctStr(out);
+  const thinkPct = pctStr(think);
+  const turn0Pct = pctStr(turn0);
   const cacheHitPct = ctx > 0 ? Math.round((cached / ctx) * 100) : 0;
 
   const idleSec = ctx > 0 && d.lastStepEpochMs ? Math.max(0, Math.floor((Date.now() - d.lastStepEpochMs) / 1000)) : 0;
@@ -919,10 +921,10 @@ function toView(d) {
   }
 
   return {
-    pillCtx: usedPctRound + '%',
+    pillCtx: hasMax ? usedPctRound + '%' : (ctx === 0 ? '0%' : '--%'),
     ctxIconColor,
-    usedPctText: usedPctRound + '% used',
-    usedFrac: fmtK(ctx) + ' / ' + fmtK(maxCtx),
+    usedPctText: hasMax ? usedPctRound + '% used' : (ctx === 0 ? '0% used' : '--% used'),
+    usedFrac: fmtK(ctx) + ' / ' + (hasMax ? fmtK(maxCtx) : '--'),
     segReadW,
     segOutW,
     segThinkW,
@@ -933,18 +935,18 @@ function toView(d) {
     cacheValOp,
     valCacheHit,
     valCacheHitK,
-    valTurn0Pct: turn0Pct + '%',
+    valTurn0Pct: turn0Pct,
     valTurn0K: fmtColK(turn0),
-    valReadPct: readPct + '%',
+    valReadPct: readPct,
     valReadK: fmtColK(read),
-    valThinkPct: thinkPct + '%',
+    valThinkPct: thinkPct,
     valThinkK: fmtColK(think),
-    valOutPct: outPct + '%',
+    valOutPct: outPct,
     valOutK: fmtColK(out),
-    valRead: readPct + '% · ' + fmtK(read),
-    valOut: outPct + '% · ' + fmtK(out),
-    valThink: thinkPct + '% · ' + fmtK(think),
-    valTurn0: turn0Pct + '% · ' + fmtK(turn0),
+    valRead: readPct + ' · ' + fmtK(read),
+    valOut: outPct + ' · ' + fmtK(out),
+    valThink: thinkPct + ' · ' + fmtK(think),
+    valTurn0: turn0Pct + ' · ' + fmtK(turn0),
     quotaSummaryGroups,
     quotaHtml,
     instanceTs: INSTANCE_TS,
