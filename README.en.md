@@ -100,6 +100,16 @@ After an update the plugin restarts itself and reconnects the sidebar, with noth
 
 </details>
 
+## Development tests
+
+Run the Node tests from the repository root. Playwright is not required:
+
+```sh
+node --test "test/*.test.mjs"
+```
+
+Browser regression tests are optional. With Playwright and Chromium installed, run `node test/browser-regressions.mjs` separately.
+
 ## Notices
 
 - Many features in this version come from [z21100644's PR #1](https://github.com/Lumidarin/agy-capsule/pull/1), picked item by item and reimplemented rather than merged as a whole: multiple languages, parts of the panel visual design, active-model highlighting, click-to-pin, generation metrics and speed effects, Cache and quota tooltips, context overload alerts and error classification, absent quota-window hiding, plus ideas for style isolation, cached reads, incremental CDP pushes and install maintenance. Separate display/settings languages, independent appearance controls, the third failure capsule, folding priority, turn metrics and the later sidebar interactions were designed separately. Seven-category context estimates and attachment scanning were not adopted.

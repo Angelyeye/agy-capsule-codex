@@ -101,6 +101,15 @@
 
 </details>
 
+## 开发测试
+
+在仓库根目录运行 Node 测试，无需安装 Playwright：
+
+```sh
+node --test "test/*.test.mjs"
+```
+
+浏览器回归是可选的。装好 Playwright 和 Chromium 后，可单独运行 `node test/browser-regressions.mjs`。
 
 ## 声明
 
