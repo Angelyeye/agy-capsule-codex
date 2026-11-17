@@ -36,6 +36,7 @@ function pageMount(d) {
     if (!node) return;
     document.removeEventListener('click', node._onOutsideClick);
     document.removeEventListener('keydown', node._onEscape);
+    if (node._onResize) window.removeEventListener('resize', node._onResize);
     node._modelObserver?.disconnect();
     node._resizeObserver?.disconnect();
     if (node._layoutRaf) cancelAnimationFrame(node._layoutRaf);
@@ -66,11 +67,11 @@ function pageMount(d) {
   }
 
   // Upgrade or initialize DOM structure in-place
-  if (root.getAttribute('data-deck-ver') !== '106') {
+  if (root.getAttribute('data-deck-ver') !== '107') {
     release(root);
     root._pinnedGroup = null;
     root.removeAttribute('data-pinned');
-    root.setAttribute('data-deck-ver', '106');
+    root.setAttribute('data-deck-ver', '107');
     root._speedActivity = null;
     root._motionPrev = null;
     root.style.cssText = [
@@ -138,7 +139,7 @@ function pageMount(d) {
         #deck-metrics-strip [data-el="grpError"] .dk-pill,
         #deck-metrics-strip [data-el="grpError"] .dk-val,
         #deck-metrics-strip [data-el="grpError"] .dk-svg { color: #e06c75; }
-        #deck-metrics-strip .dk-error-pop { width: 240px; max-width: calc(100vw - 16px); overflow-wrap: anywhere; }
+        #deck-metrics-strip .dk-error-pop { width: 240px; }
         #deck-metrics-strip .dk-error-heading { font-weight: 600; margin-bottom: 8px; color: var(--foreground, #ddd); }
         #deck-metrics-strip .dk-error-diagnostic { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border, #444); white-space: pre-wrap; }
         #deck-metrics-strip .dk-error-diagnostic:empty { display: none; }
@@ -234,7 +235,8 @@ function pageMount(d) {
           border: 1px solid var(--border, rgba(128, 128, 128, 0.18));
           border-radius: 10px;
           padding: var(--agy-pad-y, 10px) var(--agy-pad-x, 12px);
-          max-width: calc(100vw - 16px);
+          max-width: var(--dk-pop-max-width, calc(100vw - 16px));
+          overflow-wrap: anywhere;
           box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.03);
           z-index: 999999;
           color: var(--muted-foreground, #8e8e93);
@@ -412,24 +414,24 @@ function pageMount(d) {
           width: max-content;
         }
         #deck-metrics-strip[data-quota-indicator="bar"] .dk-quota-pop {
-          min-width: 228px;
+          min-width: min(228px, var(--dk-pop-max-width, calc(100vw - 16px)));
         }
         /* One grid for the whole popover; groups, rows and the pct+indicator
            cell are subgrids, so every column lines up across all groups. */
         #deck-metrics-strip .dk-quota-pop > .dk-panel-content {
           display: grid;
-          grid-template-columns: minmax(54px, max-content) max-content max-content max-content;
+          grid-template-columns: minmax(54px, max-content) max-content max-content minmax(0, max-content);
           column-gap: 8px;
           align-content: start;
         }
         #deck-metrics-strip[data-quota-indicator="bar"] .dk-quota-pop > .dk-panel-content {
-          grid-template-columns: minmax(54px, max-content) max-content minmax(48px, 1fr) max-content;
+          grid-template-columns: minmax(54px, max-content) max-content minmax(48px, 1fr) minmax(0, max-content);
         }
         #deck-metrics-strip[data-language^="zh"] .dk-quota-pop > .dk-panel-content {
-          grid-template-columns: minmax(42px, max-content) max-content max-content max-content;
+          grid-template-columns: minmax(42px, max-content) max-content max-content minmax(0, max-content);
         }
         #deck-metrics-strip[data-language^="zh"][data-quota-indicator="bar"] .dk-quota-pop > .dk-panel-content {
-          grid-template-columns: minmax(42px, max-content) max-content minmax(48px, 1fr) max-content;
+          grid-template-columns: minmax(42px, max-content) max-content minmax(48px, 1fr) minmax(0, max-content);
         }
         #deck-metrics-strip .dk-q-group,
         #deck-metrics-strip .dk-q-row {
@@ -452,13 +454,11 @@ function pageMount(d) {
         }
         #deck-metrics-strip .dk-q-label {
           color: var(--muted-foreground, #8e8e93);
-          white-space: nowrap;
         }
         #deck-metrics-strip .dk-q-mid {
           grid-column: 4;
           text-align: left;
           color: var(--muted-foreground, #8e8e93);
-          white-space: nowrap;
         }
         #deck-metrics-strip .dk-q-right {
           grid-column: 2 / 4;
@@ -659,38 +659,40 @@ function pageMount(d) {
       root._pinnedGroup = null;
       root.removeAttribute('data-pinned');
     };
+    root._layoutPopovers = (grp = root._pinnedGroup || root.querySelector('.dk-grp:hover')) => {
+      const pop = grp?.querySelector('.dk-pop');
+      if (!pop && root.dataset.panelLayout !== 'matched') {
+        root._fitPanelHeights?.();
+        return;
+      }
+      // Constrain width before measuring heights or positioning; moving a panel
+      // alone cannot make it fit inside a narrower clipping ancestor.
+      let minLeft = 8;
+      let maxRight = window.innerWidth - 8;
+      for (let el = root; el && el !== document.documentElement; el = el.parentElement || el.getRootNode().host) {
+        const cs = getComputedStyle(el);
+        if (cs.overflowX === 'visible' && !/paint|strict|content/.test(cs.contain)) continue;
+        const innerLeft = el.getBoundingClientRect().left + el.clientLeft;
+        minLeft = Math.max(minLeft, innerLeft + 4);
+        maxRight = Math.min(maxRight, innerLeft + el.clientWidth - 4);
+      }
+      const limit = `${Math.max(0, maxRight - minLeft)}px`;
+      if (root.style.getPropertyValue('--dk-pop-max-width') !== limit) root.style.setProperty('--dk-pop-max-width', limit);
+      root._fitPanelHeights?.();
+      const width = pop?.getBoundingClientRect().width;
+      if (!width) return;
+      const pill = grp.querySelector('.dk-pill').getBoundingClientRect();
+      const stripLeft = root.getBoundingClientRect().left;
+      let left = Math.max(stripLeft, pill.right - width);
+      left = Math.max(minLeft, Math.min(left, maxRight - width));
+      pop.style.left = (left - grp.getBoundingClientRect().left) + 'px';
+    };
     for (const grp of root.querySelectorAll('.dk-grp')) {
-      const position = () => {
-        root._fitPanelHeights?.(true);
-        const pop = grp.querySelector('.dk-pop');
-        if (!pop) return;
-        pop.style.left = '';
-        const width = pop.getBoundingClientRect().width;
-        if (width <= 0) return;
-        const pill = grp.querySelector('.dk-pill').getBoundingClientRect();
-        const stripLeft = root.getBoundingClientRect().left;
-        // Error panel hugs its capsule's right edge; the others sit as far
-        // left as the strip allows while still reaching their capsule's right edge.
-        // Quota and failure panels lean toward the strip's left edge but always cover their own capsule's right edge.
-        let left = Math.max(stripLeft, pill.right - width);
-        // Stay inside every clipping ancestor (e.g. the chat input box), not just the window.
-        let minLeft = 8;
-        let maxRight = window.innerWidth - 8;
-        for (let el = grp.parentElement || grp.getRootNode().host; el && el !== document.documentElement; el = el.parentElement || el.getRootNode().host) {
-          const cs = getComputedStyle(el);
-          if (cs.overflowX === 'visible' && !/paint|strict|content/.test(cs.contain)) continue;
-          const r = el.getBoundingClientRect();
-          minLeft = Math.max(minLeft, r.left + 4);
-          maxRight = Math.min(maxRight, r.right - 4);
-        }
-        left = Math.max(minLeft, Math.min(left, maxRight - width));
-        pop.style.left = (left - grp.getBoundingClientRect().left) + 'px';
-      };
       grp.addEventListener('mouseenter', () => {
         root._refreshCacheTooltip?.();
         grp.removeAttribute('data-dismissed');
         if (!root._pinnedGroup || root._pinnedGroup === grp) grp.querySelector('.dk-pill').setAttribute('aria-expanded', 'true');
-        position();
+        root._layoutPopovers(root._pinnedGroup || grp);
       });
       grp.addEventListener('mouseleave', () => {
         grp.removeAttribute('data-dismissed');
@@ -712,7 +714,7 @@ function pageMount(d) {
           root.dataset.pinned = 'true';
           root._pinnedGroup = grp;
           grp.querySelector('.dk-pill').setAttribute('aria-expanded', 'true');
-          position();
+          root._layoutPopovers(grp);
         }
       });
     }
@@ -727,6 +729,8 @@ function pageMount(d) {
     };
     document.addEventListener('click', root._onOutsideClick);
     document.addEventListener('keydown', root._onEscape);
+    root._onResize = () => root._scheduleLayout?.();
+    window.addEventListener('resize', root._onResize);
     root.querySelector('[data-el="rowCacheHit"]').addEventListener('mouseenter', () => root._refreshCacheTooltip?.());
   }
 
@@ -1085,7 +1089,10 @@ function pageMount(d) {
       root._adjustingLayout = false;
     }
   };
-  root._adjustLayout = adjustLayout;
+  root._adjustLayout = () => {
+    adjustLayout();
+    root._layoutPopovers();
+  };
   root._scheduleLayout = () => {
     if (root._layoutRaf) return;
     root._layoutRaf = requestAnimationFrame(() => {
@@ -1161,7 +1168,7 @@ function pageMount(d) {
   presentation.apply(root, d.prefs);
   applyModelQuota();
 
-  root._fitPanelHeights = (force = false) => {
+  root._fitPanelHeights = () => {
     // The failure panel joins the matched height only while its capsule is shown.
     const errorPop = root.querySelector('.dk-error-pop');
     const pops = [root.querySelector('.dk-ctx-pop'), root.querySelector('.dk-quota-pop')];
@@ -1172,8 +1179,8 @@ function pageMount(d) {
       root._heightKey = '';
       return;
     }
-    const key = JSON.stringify(d.prefs) + pops.map(pop => pop.textContent).join('|') + window.innerWidth;
-    if (!force && key === root._heightKey) return;
+    const key = JSON.stringify(d.prefs) + pops.map(pop => pop.textContent).join('|') + root.style.getPropertyValue('--dk-pop-max-width');
+    if (key === root._heightKey) return;
     const previous = pops.map(pop => ({ display: pop.style.display, visibility: pop.style.visibility }));
     root.dataset.panelLayout = 'natural';
     for (const pop of pops) { pop.style.height = ''; pop.style.display = 'block'; pop.style.visibility = 'hidden'; }
@@ -1186,9 +1193,7 @@ function pageMount(d) {
     }
     if (heights.every(height => height > 0)) root._heightKey = key;
   };
-  root._fitPanelHeights();
-
-  adjustLayout();
+  root._adjustLayout();
 
   return 'ok:' + modelText;
 }
@@ -1381,10 +1386,11 @@ function installRuntime(owner, hash) {
     owner, hash,
     readState(caller) {
       if (caller < owner) return 'superseded';
-      return { hash, path: location.pathname, hasFooter: !!document.querySelector('.agy-composer-footer > div:first-child') };
+      return { owner, hash, path: location.pathname, hasFooter: !!document.querySelector('.agy-composer-footer > div:first-child') };
     },
-    apply(next, path) {
-      if (disposed || path !== location.pathname) return false;
+    apply(next, path, caller) {
+      if (caller < owner) return 'superseded';
+      if (caller !== owner || disposed || path !== location.pathname) return false;
       data = next;
       dataPath = path;
       run();
@@ -1488,6 +1494,10 @@ export function startDeckInjector(inspect, options = {}) {
       finally { retire(entry, id); }
     }));
   };
+  const supersede = async () => {
+    await stop();
+    (options.onSuperseded || (() => process.exit(0)))();
+  };
   const tick = async () => {
     if (busy || stopped) return;
     busy = true;
@@ -1498,21 +1508,23 @@ export function startDeckInjector(inspect, options = {}) {
           const entry = sockets.get(target.id) || await connect(target);
           let state = await evaluate(entry, `globalThis.__agyCapsuleDeck?.readState(${owner})??null`);
           if (state === undefined || stopped) continue;
-          if (state === 'superseded') { await stop(); (options.onSuperseded || (() => process.exit(0)))(); return; }
-          if (!state || state.hash !== bundle.hash) {
+          if (state === 'superseded') return await supersede();
+          if (state?.owner !== owner || state.hash !== bundle.hash) {
             const installed = await evaluate(entry, bundle.code);
-            if (installed === 'superseded') { await stop(); (options.onSuperseded || (() => process.exit(0)))(); return; }
+            if (installed === 'superseded') return await supersede();
             if (!installed || stopped) continue;
             entry.lastPayload = '';
             state = await evaluate(entry, `globalThis.__agyCapsuleDeck?.readState(${owner})??null`);
           }
-          if (!state?.path || state.hasFooter === false) continue;
+          if (state === 'superseded') return await supersede();
+          if (state?.owner !== owner || !state.path || state.hasFooter === false) continue;
           const match = state.path.match(/\/c\/([0-9a-f-]{36})/);
           const data = await inspect(match ? match[1] : '', true);
           if (!data || data.error || stopped) continue;
           const payload = JSON.stringify(data);
           if (entry.lastPayload !== payload || entry.lastPath !== state.path) {
-            const applied = await evaluate(entry, `globalThis.__agyCapsuleDeck?.apply(${payload},${JSON.stringify(state.path)})??false`);
+            const applied = await evaluate(entry, `globalThis.__agyCapsuleDeck?.apply(${payload},${JSON.stringify(state.path)},${owner})??false`);
+            if (applied === 'superseded') return await supersede();
             if (applied) { entry.lastPayload = payload; entry.lastPath = state.path; }
             else entry.lastPayload = '';
           }

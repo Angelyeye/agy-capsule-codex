@@ -2,13 +2,18 @@
 // node test/browser-regressions.mjs [path to playwright module] [browser channel]
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { UI_HTML } from '../agy-capsule/sidecars/agy_capsule/server.mjs';
 import { DEFAULT_SETTINGS } from '../agy-capsule/sidecars/agy_capsule/settings.mjs';
-import { buildRuntimeBundle } from '../agy-capsule/sidecars/agy_capsule/deck_injector.mjs';
+import { buildRuntimeBundle, startDeckInjector } from '../agy-capsule/sidecars/agy_capsule/deck_injector.mjs';
 
 const { chromium } = createRequire(import.meta.url)(process.argv[2] || 'playwright');
 const launch = { headless: true, ...(process.argv[3] ? { channel: process.argv[3] } : {}) };
+const owner = 1234;
+const apply = (page, data) => page.evaluate(({ data, owner }) => globalThis.__agyCapsuleDeck.apply(data, location.pathname, owner), { data, owner });
 const snapshot = () => ({
   uiVersion: Number(UI_HTML.match(/d\.uiVersion !== (\d+)/)[1]),
   contextTokens: 128000, maxContextTokens: 256000, cachedIn: 100000,
@@ -60,8 +65,7 @@ await test('Footer reveals and wider speed values never overlap the native contr
     [data-testid=permissions-selector-trigger]{display:flex;align-items:center;gap:4px;padding:6px;border:0;height:28px}
     [data-testid=permissions-selector-trigger] svg{width:14px;height:14px;flex-shrink:0}
     </style><div class="agy-composer-footer"><div class="footer-left"><button>+</button><div class="model"><button>Gemini 4 Argon Medium</button></div></div><div class="right"><button data-testid="permissions-selector-trigger"><svg></svg><span>Turbo</span><svg></svg></button><button>Send</button></div></div>`);
-  await page.evaluate(buildRuntimeBundle(1234).code);
-  const apply = data => page.evaluate(value => globalThis.__agyCapsuleDeck.apply(value, location.pathname), data);
+  await page.evaluate(buildRuntimeBundle(owner).code);
   const samples = () => page.evaluate(async () => {
     const gaps = [];
     for (let i = 0; i < 18; i++) {
@@ -75,14 +79,109 @@ await test('Footer reveals and wider speed values never overlap the native contr
   for (const width of [260, 300, 340, 380, 420, 460, 500, 540, 580]) {
     await page.locator('.agy-composer-footer').evaluate((element, value) => element.style.width = value + 'px', width);
     const data = snapshot();
-    await apply(data);
+    await apply(page, data);
     await page.waitForTimeout(250);
     data.prefs.showSpeed = true;
-    await apply(data);
+    await apply(page, data);
     assert.ok((await samples()).every(overlap => overlap <= 1), `Speed reveal overlaps at ${width}px`);
     data.turnSpeed.generation.tps = 10000;
-    await apply(data);
+    await apply(page, data);
     assert.ok((await samples()).every(overlap => overlap <= 1), `Wider text overlaps at ${width}px`);
   }
   assert.deepEqual(errors, []);
+});
+
+await test('Pinned popovers fit a narrower clipping container and regain their width when it grows', async t => {
+  const browser = await chromium.launch(launch);
+  t.after(() => browser.close());
+  const page = await browser.newPage({ viewport: { width: 900, height: 700 } });
+  await page.setContent(`<style>
+    body{font:13px Arial}#clipper{width:400px;overflow:hidden;position:absolute;bottom:50px;left:100px;padding-top:330px}
+    .agy-composer-footer{display:flex;align-items:center;gap:4px}.footer-left{display:flex;align-items:center;flex:1;min-width:0}
+    </style><div id="clipper"><div class="agy-composer-footer"><div class="footer-left"><button>Gemini</button></div><button>Send</button></div></div>`);
+  await page.evaluate(buildRuntimeBundle(owner).code);
+  const data = snapshot();
+  data.prefs = { ...data.prefs, panelLayout: 'matched', quotaIndicator: 'bar', resetFormat: 'localized' };
+  data.quotaGroups[0].buckets[0].resetTime = new Date(Date.now() + 5 * 86400000 + 3 * 3600000).toISOString();
+  data.requestError = { kind: 'rate_limited', diagnostic: 'Too many requests: ' + 'x'.repeat(110) };
+  assert.equal(await apply(page, data), true);
+  const clipper = page.locator('#clipper');
+  for (const name of ['Ctx', 'Quota', 'Error']) {
+    const group = page.locator(`#agy-capsule-host [data-el="grp${name}"]`);
+    const panel = group.locator('.dk-pop');
+    await group.locator('.dk-pill').click();
+    const wide = await panel.boundingBox();
+    assert.ok(wide.width >= 228);
+    await clipper.evaluate(el => { el.style.width = '210px'; });
+    await page.waitForFunction(name => {
+      const root = document.getElementById('agy-capsule-host').shadowRoot;
+      const pop = root.querySelector(`[data-el="grp${name}"] .dk-pop`);
+      const { left, right } = document.getElementById('clipper').getBoundingClientRect();
+      const bounds = pop.getBoundingClientRect();
+      return bounds.width > 0 && bounds.left >= left + 3 && bounds.right <= right - 3;
+    }, name, { timeout: 2500 });
+    assert.equal(await group.getAttribute('data-pinned'), 'true');
+    assert.ok(await panel.evaluate(el => el.scrollWidth <= el.clientWidth + 1), `${name} content fits the constrained panel`);
+    await clipper.evaluate(el => { el.style.width = '400px'; });
+    await page.waitForFunction(({ name, width }) => {
+      const root = document.getElementById('agy-capsule-host').shadowRoot;
+      return Math.abs(root.querySelector(`[data-el="grp${name}"] .dk-pop`).getBoundingClientRect().width - width) <= 1;
+    }, { name, width: wide.width }, { timeout: 2500 });
+    await page.keyboard.press('Escape');
+  }
+});
+
+await test('A newer injector takes over the same bundle and rejects an in-flight write from the old owner', async t => {
+  const browser = await chromium.launch(launch);
+  t.after(() => browser.close());
+  const page = await browser.newPage();
+  await page.setContent('<div class="agy-composer-footer" style="display:flex;width:600px"><div style="display:flex;flex:1"><button>Gemini</button></div><button>Send</button></div>');
+
+  const directory = mkdtempSync(join(tmpdir(), 'agy-cdp-takeover-'));
+  const portFile = join(directory, 'port');
+  writeFileSync(portFile, '12345\n');
+  const originals = { fetch: globalThis.fetch, WebSocket: globalThis.WebSocket };
+  globalThis.fetch = async () => ({ ok: true, json: async () => [{ id: 'page', type: 'page', url: 'http://127.0.0.1:12345/', webSocketDebuggerUrl: 'ws://mock' }] });
+  globalThis.WebSocket = class {
+    constructor() { queueMicrotask(() => { this.readyState = 1; this.onopen?.(); }); }
+    async send(raw) {
+      const { id, params: { expression } } = JSON.parse(raw);
+      let value;
+      try { value = await page.evaluate(expression); } catch {}
+      this.onmessage?.({ data: JSON.stringify({ id, result: { result: { value } } }) });
+    }
+    close() { this.readyState = 3; this.onclose?.(); }
+  };
+  const data = contextTokens => ({ ...snapshot(), contextTokens, maxContextTokens: 1000 });
+  const waiting = Promise.withResolvers();
+  const release = Promise.withResolvers();
+  let startedRace = false, superseded = false;
+  const old = startDeckInjector(async () => {
+    if (!startedRace) return data(100);
+    waiting.resolve();
+    await release.promise;
+    return data(200);
+  }, { portFile, instanceTs: owner, onSuperseded: () => { superseded = true; } });
+  const newer = startDeckInjector(async () => data(800), { portFile, instanceTs: owner + 1 });
+  try {
+    await old.tick();
+    const pill = page.locator('#agy-capsule-host [data-k="pillCtx"]');
+    assert.equal(await pill.textContent(), '10%');
+    startedRace = true;
+    const oldTick = old.tick();
+    await waiting.promise;
+    await newer.tick();
+    assert.equal(await pill.textContent(), '80%');
+    assert.equal(await page.evaluate(() => globalThis.__agyCapsuleDeck.owner), owner + 1);
+    release.resolve();
+    await oldTick;
+    assert.equal(superseded, true);
+    assert.equal(await pill.textContent(), '80%');
+  } finally {
+    release.resolve();
+    await old.stop();
+    await newer.stop();
+    Object.assign(globalThis, originals);
+    rmSync(directory, { recursive: true, force: true });
+  }
 });

@@ -18,7 +18,7 @@ test('CDP installs code once, skips unchanged payloads, updates on navigation, a
       const { id, params: { expression } } = JSON.parse(raw);
       let value;
       if (expression.includes('function installRuntime')) { injections++; installed = true; value = true; }
-      else if (expression.includes('.readState(')) value = installed ? { hash, path, hasFooter } : null;
+      else if (expression.includes('.readState(')) value = installed ? { owner, hash, path, hasFooter } : null;
       else if (expression.includes('.apply(')) { pushes++; value = true; }
       queueMicrotask(() => this.onmessage?.({ data: JSON.stringify({ id, result: { result: { value } } }) }));
     }
