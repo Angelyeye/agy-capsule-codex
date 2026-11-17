@@ -17,53 +17,60 @@ const presentation = createPresentation();
 
 const CONV_DIR = join(homedir(), '.gemini', 'antigravity', 'conversations');
 
-let cachedQuotaGroups = null;
+const NO_QUOTA = { quotaGroups: [], cloudPaygo: false };
+let cachedQuota = null;
 let lastQuotaFetchMs = 0;
 let lsConnFailures = 0;
 const QUOTA_TTL_MS = 10000;
 let quotaPromise = null;
 
-async function fetchQuotaGroups() {
+async function fetchQuota() {
   const now = Date.now();
-  if (cachedQuotaGroups && now - lastQuotaFetchMs < QUOTA_TTL_MS) {
-    return cachedQuotaGroups;
+  if (cachedQuota && now - lastQuotaFetchMs < QUOTA_TTL_MS) {
+    return cachedQuota;
   }
   if (quotaPromise) return quotaPromise;
-  quotaPromise = loadQuotaGroups();
+  quotaPromise = loadQuota();
   try { return await quotaPromise; }
   finally { quotaPromise = null; }
 }
 
-async function loadQuotaGroups() {
+async function loadQuota() {
   const lsAddr = process.env.ANTIGRAVITY_LS_ADDRESS;
   const csrf = process.env.ANTIGRAVITY_CSRF_TOKEN;
-  if (!lsAddr || !csrf) return cachedQuotaGroups || [];
+  if (!lsAddr || !csrf) return cachedQuota || NO_QUOTA;
+  const request = method => fetch(`http://${lsAddr}/exa.language_server_pb.LanguageServerService/${method}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-codeium-csrf-token': csrf },
+    body: '{}',
+    signal: AbortSignal.timeout(3000),
+  });
   try {
-    const res = await fetch(
-      `http://${lsAddr}/exa.language_server_pb.LanguageServerService/RetrieveUserQuotaSummary`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-codeium-csrf-token': csrf,
-        },
-        body: '{}',
-        signal: AbortSignal.timeout(3000),
-      }
-    );
+    const res = await request('RetrieveUserQuotaSummary');
     lsConnFailures = 0;
-    if (!res.ok) return cachedQuotaGroups || [];
+    if (!res.ok) return cachedQuota || NO_QUOTA;
     const data = await res.json();
-    const groups = data?.response?.groups || data?.groups || [];
-    cachedQuotaGroups = groups;
+    const groups = data?.response?.groups ?? data?.groups;
+    const quotaGroups = Array.isArray(groups) ? groups : [];
+    let cloudPaygo = false;
+    if (quotaGroups.length === 0) {
+      // A missing summary alone is not a billing-mode signal. The local user
+      // status identifies Cloud pay-as-you-go separately from subscriptions.
+      cloudPaygo = cachedQuota?.cloudPaygo ?? false;
+      try {
+        const status = await request('GetUserStatus');
+        if (status.ok) cloudPaygo = (await status.json())?.userStatus?.userTier?.id === 'agy-business-paygo-tier';
+      } catch {} // Optional detection must not restart the sidecar.
+    }
+    cachedQuota = { quotaGroups, cloudPaygo };
     lastQuotaFetchMs = Date.now();
-    return groups;
+    return cachedQuota;
   } catch {
     lsConnFailures++;
     if (lsConnFailures >= 2) {
       process.exit(0);
     }
-    return cachedQuotaGroups || [];
+    return cachedQuota || NO_QUOTA;
   }
 }
 
@@ -262,7 +269,7 @@ async function makeEmptyContextResult() {
     turn0Tokens: 0,
     totalOutputTokens: 0,
     totalThinkingTokens: 0,
-    quotaGroups: await fetchQuotaGroups(),
+    ...await fetchQuota(),
   };
 }
 
@@ -298,7 +305,7 @@ async function inspectConversation(convId, exact = false) {
     uiVersion: 99,
     ...snapshot,
     prefs: settingsStore.read(),
-    quotaGroups: await fetchQuotaGroups(),
+    ...await fetchQuota(),
   };
 }
 

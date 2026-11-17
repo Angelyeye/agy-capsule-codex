@@ -740,6 +740,7 @@ function pageMount(d) {
   const labels = presentation.apply(root, d.prefs);
   presentation.renderContextTooltips(root, d.contextData, labels);
   const alerts = presentation.renderAlerts(root, { ...d.contextData, requestError: d.requestError }, d.prefs, labels);
+  root.querySelector('[data-el="grpQuota"]').hidden = d.cloudPaygo;
   if (root._pinnedGroup?.hidden) {
     root._pinnedGroup.removeAttribute('data-pinned');
     root._pinnedGroup.querySelector('.dk-pill').setAttribute('aria-expanded', 'false');
@@ -1169,9 +1170,11 @@ function pageMount(d) {
   applyModelQuota();
 
   root._fitPanelHeights = () => {
-    // The failure panel joins the matched height only while its capsule is shown.
+    // Only visible capsules participate in matched panel height.
     const errorPop = root.querySelector('.dk-error-pop');
-    const pops = [root.querySelector('.dk-ctx-pop'), root.querySelector('.dk-quota-pop')];
+    const pops = [root.querySelector('.dk-ctx-pop')];
+    if (!quotaPop.closest('.dk-grp').hidden) pops.push(quotaPop);
+    else quotaPop.style.height = '';
     if (errorPop && !errorPop.closest('.dk-grp').hidden) pops.push(errorPop);
     else if (errorPop) errorPop.style.height = '';
     if (root.dataset.panelLayout !== 'matched') {
@@ -1325,6 +1328,7 @@ function toView(d) {
     turnSpeed: d.turnSpeed || null,
     turnMetrics: d.turnMetrics || null,
     requestError: d.requestError || { kind: 'none' },
+    cloudPaygo: d.cloudPaygo === true,
     cache: { contextTokens: ctx, cachedIn: cached, lastStepEpochMs: d.lastStepEpochMs || 0 },
     contextData: { contextTokens: ctx, maxContextTokens: maxCtx, cachedIn: cached, uncachedIn: d.uncachedIn, turn0Tokens: turn0, totalOutputTokens: out, totalThinkingTokens: think },
     pillCtx: hasMax ? usedPctRound + '%' : (ctx === 0 ? '0%' : '--%'),

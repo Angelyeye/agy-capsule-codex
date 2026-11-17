@@ -26,7 +26,11 @@ Shows context usage, cache hit rate and cache status. The limit is read live for
 
 ## Quota
 
-Shows the 5-hour and weekly remaining quota and the reset countdown for the current pool or all pools. **Everything below is optional.**
+Shows the remaining 5-hour and weekly quotas and their reset countdowns for the current pool or all pools.
+
+**Vertex AI (Google Cloud pay-as-you-go):** When no subscription quota is returned and Antigravity confirms the account uses Cloud pay-as-you-go billing, the entire quota capsule is hidden.
+
+**Everything below is optional.**
 
 - **Highlight active model**: Highlights the pool of the selected model and dims the others.
 - **Hide absent quota windows**: For example, AI Pro users' Argon pool has no 5-hour quota, so that empty window is hidden.

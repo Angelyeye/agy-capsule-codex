@@ -7,7 +7,7 @@ Real-time context window usage, multi-model quota, cache status, generation spee
 Injects a shadow-DOM metrics strip into the Antigravity composer footer via the local DevTools (CDP) endpoint:
 
 - **Context capsule**: Live context usage percentage (`0 / --` before the first turn), optional **Generation speed** (latest completed request in the current turn), and optional **Effects** (breathing dot while generating: red `<10 tok/s`, yellow `10–25 tok/s`, green `≥25 tok/s`; retains speed color for 15s after completion before graying out).
-- **Quota capsule**: Matched model pool quotas (`5 Hours` and `Weekly`) across `Gemini`, `Claude`, `Argon`, and `Carbon`, with reset countdowns.
+- **Quota capsule**: Matched model pool quotas (`5 Hours` and `Weekly`) across `Gemini`, `Claude`, `Argon`, and `Carbon`, with reset countdowns. When no subscription quota is returned and Antigravity confirms the account uses Cloud pay-as-you-go billing, the entire quota capsule is hidden.
 - **Request failure capsule** (optional): Appears only when a request fails, classifying `Quota exhausted`, `Rate limited` (429 + retry wait when reported), `Disconnected`, `Authentication error`, `Service busy`, or `Unknown reason` with raw diagnostics in its panel.
 - **Hover & click-to-pin**: Hover any capsule to open its popover panel; click to pin it open (click again, click outside, or press `Escape` to close).
 - **4-level narrow-width progressive fallback**: When composer width shrinks, degrades in stages (collapses Turbo selector / hides speed and error label → hides secondary quota window → hides quota and context percentages down to icon-only → ellipsis-truncates the model selector and hides remaining capsules if space is exhausted) to preserve hover access without overlap.
