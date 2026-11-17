@@ -2,36 +2,120 @@
 
 [中文](./README.md) | **English**
 
-Context and quota capsules in the Antigravity composer footer.
+Context usage, multi-model quotas, cache status and generation speed in the Antigravity composer footer. Hover a capsule to see its panel; click it to pin the panel open.
+
+The [Bilibili promo video](https://www.bilibili.com/video/BV1zCsj65Ebc/) demos [v1.0.0](https://github.com/Lumidarin/agy-capsule/releases/tag/v1.0.0). The current version is **v1.1.0**. For a simpler footer like 1.0, turn off Generation speed, Last request, Turn metrics, and Request failure capsule in the sidebar [Settings](#settings). Turn off Context breakdown as well if you only want the key numbers.
 
 <p align="center">
-  <img src="assets/composer-quota-light.png" width="100%" alt="Light composer with inline capsules and multi-model quota panel" />
-</p>
-<p align="center">
-  <img src="assets/composer-context-dark.png" width="100%" alt="Dark composer with context breakdown, plus yellow cache warning at 3 minutes and red expiry at 4 minutes" />
+  <img src="assets/readme/hero.gif" width="100%" alt="Hovering the context, quota and request-failure capsules in turn to open their panels" />
 </p>
 
-## Features
+## Context
 
-- **Inline dual capsules**: Embedded in the composer footer to show the current session's context usage against the model's live context limit (e.g. `256k` / `512k`, or `0 / --` before the first turn) and remaining 5h / Weekly quotas in real time.
-- **Token breakdown**: Hover to see the proportions and token counts for `Turn0`, `Read`, `Think`, and `Write`.
-- **Cache expiry alerts**: Turn yellow 3 minutes after the last turn with a countdown (`~1m`), and turn red at 4 minutes to mark `Cache` as expired.
-- **Multi-model quota panel**: Automatically match the model selected in the footer (such as `Gemini`, `Claude`, `Argon`, or `Carbon`). Hover to see each group's remaining 5h and weekly quotas, plus reset countdowns.
-- **Responsive narrow layout**: Degrades progressively as the footer narrows (hide Weekly quota first, keep icons with hover popovers, then ellipsis-truncate the model selector) to prevent overlap.
-- **Local font fallbacks**: Prefer Source Han Sans, falling back to the system UI font when unavailable; no font downloads or extra installation required.
-- **Light / dark adaptation & cross-version compatibility**: Reuse the host's CSS variables directly; mount via a native Sidecar and CDP without modifying client source code, so it keeps working after client updates.
+Shows context usage, cache hit rate and cache status. The limit is read live for the current session and model. **Everything below is optional.**
+
+- **Cache expiry alert**: The capsule icon turns yellow three minutes after the last turn and red at four, meaning the `Cache` has expired. The panel's Cache row changes with it.
+
+- **Context overload alert**: The capsule number turns yellow above 75% and red above 90%.
+
+- **Generation speed**: Shows the speed of this turn's latest request, updated each time a request completes.
+
+- **Speed effects**: A dot that breathes while the model is generating. Red below 10 tok/s, yellow from 10 to under 25, green at 25 and above. After generation stops it keeps its color for 15 seconds, then grays out.
+
+- **Context breakdown**: Splits the context into turn0 (first turn), read, think and write, showing each value and share. Choose rows or columns. Rows can use square or dot markers; columns let you toggle name, value and percent and reorder them.
+- **Last request**: Shows the range from first token to the end of the latest request (e.g. `4.5s–8.6s`) and its generation speed.
+- **Turn metrics (off by default)**: Shows this turn's elapsed time, requests, thinking and write.
+
+## Quota
+
+Shows the remaining 5-hour and weekly quotas and their reset countdowns for the current pool or all pools.
+
+**Vertex AI (Google Cloud pay-as-you-go):** When no subscription quota is returned and Antigravity confirms the account uses Cloud pay-as-you-go billing, the entire quota capsule is hidden.
+
+**Everything below is optional.**
+
+- **Highlight active model**: Highlights the pool of the selected model and dims the others.
+- **Hide absent quota windows (on by default)**: For example, AI Pro users' Argon pool has no 5-hour quota, so that empty window is hidden.
+
+## Error alerts
+
+A capsule appears only when a request fails; hover or click it to see the raw error and an explanation in the panel. Reasons shown: quota exhausted, rate limited (429), disconnected, authentication error, service busy and unknown. **Optional.**
+
+## Language and appearance
+
+- **Settings language**: English, Simplified Chinese, Traditional Chinese. The language of the settings page.
+
+- **Display language**: English, Simplified Chinese, Traditional Chinese. The language of the panels.
+
+- **Panel height**: Natural height sizes each panel to its content; matched height gives every panel the same height.
+
+- **Panel spacing**: Compact, standard, spacious.
+
+- **Label casing**: Lowercase, title case.
+
+- **Quota indicator**: Ring, bar.
+
+- **Reset countdown**: Compact, localized.
+
+## Settings
+
+Open **… → Extensions → agy-capsule** from the conversation header, then switch between the Statistics and Settings tabs at the top.
+
+Preferences live in <code>~/.gemini/config/agy-capsule/settings.json</code> (<code>%USERPROFILE%\.gemini\config\agy-capsule\settings.json</code> on Windows). Updates and uninstalls keep them; options missing from older files fall back to defaults.
 
 ## Installation
 
-1. Copy the [`agy-capsule`](./agy-capsule) folder into the Antigravity plugins directory:
-   - **Windows**: `%USERPROFILE%\.gemini\config\plugins\agy-capsule`
-   - **macOS / Linux**: `~/.gemini/config/plugins/agy-capsule`
+1. Download or pull this repository, then run the appropriate script:
+
+   | Action | Windows | macOS / Linux |
+   |---|---|---|
+   | Install | `install.bat` | `sh install.sh` |
+   | Update | `update.bat` (pull the latest code first) | `sh update.sh` (pull the latest code first) |
+   | Uninstall | `uninstall.bat` | `sh uninstall.sh` |
+
+   Install and update sync to <code>~/.gemini/config/plugins/agy-capsule</code> (<code>%USERPROFILE%\.gemini\config\plugins\agy-capsule</code> on Windows) and remove stale files from older versions. Uninstall removes the plugin directory but keeps your preferences.
 2. Enable **agy-capsule** in Antigravity's **Plugins** panel.
+3. Open **… → Extensions → agy-capsule** from the conversation header.
+
+After an update the plugin restarts itself and reconnects the sidebar, with nothing to do by hand. The first update from an older version without automatic reload needs one manual plugin restart.
+
+## Metric definitions
+
+- **Generation speed** = total output ÷ (TTFT + streaming time). It includes the wait for the first token.
+- **Last request** covers only the most recent model request, not the whole turn; missing values show `—`.
+- **Turn metrics** start at your latest message; elapsed time includes queueing, waiting and tool execution.
+- **Cache expiry alerts are only a guide**: the cache state (yellow at 3 minutes, expired at 4) is estimated locally from the time since the last turn; actual cache hits depend on the server.
+
+<details>
+<summary>Details</summary>
+
+**Last request**
+
+- The speed's numerator is total output: response (including tool-call instructions) plus thinking. Incomplete or zero timings produce no speed.
+- TTFT and streaming time come from Antigravity's records, and request duration is their sum, excluding tool execution. TTFT's timer start and first-token boundary are unverified, so it is not a prefill-only measurement.
+
+**Turn metrics**
+
+- Starts at the latest sent user message, including queueing; each new message resets the totals.
+- Elapsed time uses wall-clock boundaries, including waits and tools. It advances locally while running and freezes at a known end; if a cancellation has no clear timestamp it shows unknown.
+- Requests include recorded retries, excluding pure preflight and injected responses; unrecorded backend calls are not guaranteed to be covered.
+
+</details>
+
+## Development tests
+
+Run the Node tests from the repository root. Playwright is not required:
+
+```sh
+node --test "test/*.test.mjs"
+```
+
+Browser regression tests are optional. With Playwright and Chromium installed, run `node test/browser-regressions.mjs` separately.
 
 ## Notices
 
-- **Cache expiry is an estimate**: The cache status indicator (yellow warning at 3 minutes / red expired at 4 minutes) is estimated locally based on elapsed time since the last turn and is for reference only; actual cache hits depend on the server.
-- **Tested environments & feedback**: Currently tested only on **Windows**. Testing, feedback, and PRs on **macOS** are very welcome!
+- Many features in this version come from [z21100644's PR #1](https://github.com/Lumidarin/agy-capsule/pull/1), picked item by item and reimplemented rather than merged as a whole: multiple languages, parts of the panel visual design, active-model highlighting, click-to-pin, generation metrics and speed effects, Cache and quota tooltips, context overload alerts and error classification, absent quota-window hiding, plus ideas for style isolation, cached reads, incremental CDP pushes and install maintenance. Separate display/settings languages, independent appearance controls, the third failure capsule, folding priority, turn metrics and the later sidebar interactions were designed separately. Seven-category context estimates and attachment scanning were not adopted.
+- The quota popover overflow under page-translation extensions was reported, with a proposed fix, in [Krwaby123's PR #2](https://github.com/Lumidarin/agy-capsule/pull/2). This version solves it with column alignment and do-not-translate markers instead of merging that PR directly.
 
 ## License
 
