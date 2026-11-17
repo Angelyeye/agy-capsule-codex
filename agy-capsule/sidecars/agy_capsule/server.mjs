@@ -139,7 +139,7 @@ function recordedTokenUsage(fields, confirmedZero = false) {
   };
 }
 
-function parseGenRow(idx, data) {
+function parseGenRow(idx, data, includeTurnMetrics = true) {
   if (!data || !Buffer.isBuffer(data)) data = Buffer.from(data || []);
   const top = parsePbMap(data);
   if (!top.has(1)) return null;
@@ -177,18 +177,23 @@ function parseGenRow(idx, data) {
   // Proto usage.3 is TOTAL output; usage.9 and .10 are thinking and reply.
   // Missing usage/preflight rows must not become a fake zero-token result.
   const hasOutput = m1.has(4) && (usage.has(3) || (ttft !== null && streaming !== null));
-  const retries = m1.get(17) || [];
-  const hasAttempt = retries.length > 0 || hasOutput || ttft !== null || streaming !== null || top.has(5) || (m1.get(14)?.[0] || 0) > 0;
-  const attempts = retries.map((value, index) => {
-    const info = parsePbMap(value);
-    const counters = parsePbMap(info.get(2)?.[0] || Buffer.alloc(0));
-    const finalSuccess = index === retries.length - 1 && !info.get(3)?.[0]?.length && hasOutput;
-    const reported = [2, 3, 5, 9, 10].some(key => counters.has(key));
-    return { usage: recordedTokenUsage(finalSuccess && !reported ? usage : counters, finalSuccess) };
-  });
-  if (hasAttempt && attempts.length === 0) attempts.push({ usage: recordedTokenUsage(usage, hasOutput) });
-  const expectedAttempts = hasAttempt ? Math.max(attempts.length, (m1.get(14)?.[0] || 0) + 1) : 0;
-  while (attempts.length < expectedAttempts) attempts.unshift({ usage: recordedTokenUsage(new Map()) });
+  let attempts = [];
+  let pendingAttempt = false;
+  if (includeTurnMetrics) {
+    const retries = m1.get(17) || [];
+    const hasAttempt = retries.length > 0 || hasOutput || ttft !== null || streaming !== null || top.has(5) || (m1.get(14)?.[0] || 0) > 0;
+    attempts = retries.map((value, index) => {
+      const info = parsePbMap(value);
+      const counters = parsePbMap(info.get(2)?.[0] || Buffer.alloc(0));
+      const finalSuccess = index === retries.length - 1 && !info.get(3)?.[0]?.length && hasOutput;
+      const reported = [2, 3, 5, 9, 10].some(key => counters.has(key));
+      return { usage: recordedTokenUsage(finalSuccess && !reported ? usage : counters, finalSuccess) };
+    });
+    if (hasAttempt && attempts.length === 0) attempts.push({ usage: recordedTokenUsage(usage, hasOutput) });
+    const expectedAttempts = hasAttempt ? Math.max(attempts.length, (m1.get(14)?.[0] || 0) + 1) : 0;
+    while (attempts.length < expectedAttempts) attempts.unshift({ usage: recordedTokenUsage(new Map()) });
+    pendingAttempt = !hasAttempt && stepIndices.length > 0;
+  }
 
   let maxContextTokens = 0;
   if (m1.has(9)) {
@@ -226,7 +231,7 @@ function parseGenRow(idx, data) {
     stepIndices,
     requestError,
     attempts,
-    pendingAttempt: !hasAttempt && stepIndices.length > 0,
+    pendingAttempt,
     generation: {
       requestIndex: idx, ttft, streaming,
       output: hasOutput ? usage.get(3)?.[0] || 0 : null,
@@ -299,19 +304,20 @@ async function inspectConversation(convId, exact = false) {
     }
   }
 
-  const snapshot = conversationCache.read(join(CONV_DIR, `${targetId}.db`));
+  const prefs = settingsStore.read();
+  const snapshot = conversationCache.read(join(CONV_DIR, `${targetId}.db`), prefs.showTurnMetrics);
   if (!snapshot) return await makeEmptyContextResult();
   return {
     uiVersion: 99,
     ...snapshot,
-    prefs: settingsStore.read(),
+    prefs,
     ...await fetchQuota(),
   };
 }
 
 const conversationCache = createSqliteSnapshotCache(readConversationSnapshot);
 
-function readConversationSnapshot(dbPath) {
+function readConversationSnapshot(dbPath, includeTurnMetrics = true) {
   const db = new DatabaseSync(dbPath, { readOnly: true });
   let rawRows = [];
   let cpRows = [];
@@ -325,26 +331,30 @@ function readConversationSnapshot(dbPath) {
     cpRows = db.prepare('SELECT idx FROM steps WHERE step_type = 23 ORDER BY idx DESC').all();
     // A queued user input is not a new running turn until AGY consumes it.
     userStepIndex = db.prepare('SELECT idx FROM steps WHERE step_type = 14 AND status != 11 ORDER BY idx DESC LIMIT 1').get()?.idx ?? null;
-    metricsUserStepIndex = db.prepare('SELECT idx FROM steps WHERE step_type = 14 ORDER BY idx DESC LIMIT 1').get()?.idx ?? null;
-    if (metricsUserStepIndex !== null) {
-      turnSteps = db.prepare('SELECT idx, step_type, status, metadata FROM steps WHERE idx >= ? ORDER BY idx').all(userStepIndex ?? metricsUserStepIndex).map(step => {
+    if (includeTurnMetrics) metricsUserStepIndex = db.prepare('SELECT idx FROM steps WHERE step_type = 14 ORDER BY idx DESC LIMIT 1').get()?.idx ?? null;
+    const firstTurnStep = userStepIndex ?? metricsUserStepIndex;
+    if (firstTurnStep !== null) {
+      turnSteps = db.prepare('SELECT idx, step_type, status, metadata FROM steps WHERE idx >= ? ORDER BY idx').all(firstTurnStep).map(step => {
         const fields = parsePbMap(Buffer.from(step.metadata || []));
         const stamp = fields.get(7)?.[0] || fields.get(8)?.[0];
         const time = stamp ? parsePbMap(stamp) : new Map();
+        const speedStep = {
+          idx: step.idx, step_type: step.step_type, status: step.status,
+          completedAtMs: (time.get(1)?.[0] || 0) * 1000 + (time.get(2)?.[0] || 0) / 1e6,
+        };
+        if (!includeTurnMetrics) return speedStep;
         const epoch = value => { const parts = parsePbMap(value || Buffer.alloc(0)); return parts.has(1) ? parts.get(1)[0] * 1000 + (parts.get(2)?.[0] || 0) / 1e6 : null; };
         const transitions = (parsePbMap(fields.get(26)?.[0] || Buffer.alloc(0)).get(1) || []).map(value => parsePbMap(value));
         const terminal = transitions.filter(item => [3, 6, 7, 12].includes(item.get(1)?.[0])).map(item => epoch(item.get(2)?.[0])).filter(value => value !== null);
         return {
-          idx: step.idx, step_type: step.step_type, status: step.status,
-          // Keep the existing footer-speed boundary unchanged.
-          completedAtMs: (time.get(1)?.[0] || 0) * 1000 + (time.get(2)?.[0] || 0) / 1e6,
+          ...speedStep,
           recordedCompletedAtMs: epoch(fields.get(8)?.[0]),
           createdAtMs: epoch(fields.get(1)?.[0]),
           terminalAtMs: terminal.length ? Math.max(...terminal) : null,
           executionId: fields.get(12)?.[0]?.toString('utf8') || '',
         };
       });
-      if (db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='executor_metadata'").get()) {
+      if (metricsUserStepIndex !== null && db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='executor_metadata'").get()) {
         executors = db.prepare('SELECT data FROM executor_metadata ORDER BY idx').all().map(row => {
           const fields = parsePbMap(Buffer.from(row.data || []));
           return { reason: fields.get(1)?.[0] || 0, lastStepIndex: fields.size ? (fields.get(3)?.[0] ?? 0) : -1, executionId: fields.get(9)?.[0]?.toString('utf8') || '' };
@@ -377,7 +387,7 @@ function readConversationSnapshot(dbPath) {
   const parsedRequests = [];
 
   for (const row of rawRows) {
-    const parsed = parseGenRow(row.idx, row.data);
+    const parsed = parseGenRow(row.idx, row.data, includeTurnMetrics);
     if (!parsed) continue;
     parsedRequests.push(parsed);
     latestGeneration = parsed.generation;
@@ -436,7 +446,7 @@ function readConversationSnapshot(dbPath) {
 
   return {
     turnSpeed: summarizeTurnSpeed(parsedRequests, turnSteps, userStepIndex),
-    turnMetrics: summarizeTurnMetrics(parsedRequests, turnSteps.map(step => ({ ...step, completedAtMs: step.recordedCompletedAtMs })), metricsUserStepIndex, executors),
+    turnMetrics: includeTurnMetrics ? summarizeTurnMetrics(parsedRequests, turnSteps.map(step => ({ ...step, completedAtMs: step.recordedCompletedAtMs })), metricsUserStepIndex, executors) : null,
     requestError: latestRequestError,
     generation: summarizeGeneration(latestGeneration),
     cachedIn: latest.cachedIn,
@@ -1139,7 +1149,7 @@ const UI_HTML = `<!DOCTYPE html>
 
     <div class="settings-scope" data-settings-scope="features" data-i18n="featuresSection"></div>
     ${renderCheckCard({ id: 'setting-highlight-active-model', key: 'highlightActiveModel', checked: false })}
-    ${renderCheckCard({ id: 'setting-hide-unavailable-quota', key: 'hideUnavailableQuota', checked: false })}
+    ${renderCheckCard({ id: 'setting-hide-unavailable-quota', key: 'hideUnavailableQuota', checked: DEFAULT_SETTINGS.hideUnavailableQuota })}
     ${renderCheckCard({ id: 'setting-cache-warnings', key: 'showCacheWarnings', checked: true })}
     ${renderCheckCard({ id: 'setting-context-warnings', key: 'showContextWarnings', checked: true })}
     ${renderCheckCard({ id: 'setting-request-errors', key: 'showRequestErrors', checked: true })}
@@ -1179,15 +1189,15 @@ const UI_HTML = `<!DOCTYPE html>
       </div></div>
     </div>
     ${renderCheckCard({ id: 'setting-show-request-metrics', helpId: 'request-metrics', key: 'showRequestMetrics', tip: 'requestSectionTip', checked: true })}
-    <div class="setting-card setting-option-card metric-setting" data-setting-card="showTurnMetrics" data-layout-key="turnLayout" data-checked="true" data-layout="columns">
+    <div class="setting-card setting-option-card metric-setting" data-setting-card="showTurnMetrics" data-layout-key="turnLayout" data-checked="${DEFAULT_SETTINGS.showTurnMetrics}" data-layout="columns">
       <div class="setting-head setting-pair-head">
-        <div class="setting-pair-item"><label class="setting-check"><input id="setting-show-turn-metrics" name="showTurnMetrics" type="checkbox" checked aria-describedby="help-turn-metrics" /><span data-i18n="showTurnMetrics"></span></label></div>
+        <div class="setting-pair-item"><label class="setting-check"><input id="setting-show-turn-metrics" name="showTurnMetrics" type="checkbox"${DEFAULT_SETTINGS.showTurnMetrics ? ' checked' : ''} aria-describedby="help-turn-metrics" /><span data-i18n="showTurnMetrics"></span></label></div>
         <div class="setting-opts">${renderSeg('turnLayout', LAYOUT_OPTIONS)}<span class="setting-opts-extra" data-for-layout="rows">${renderSeg('turnMarker', MARKER_OPTIONS)}</span></div>
         <span class="setting-help-dot" aria-hidden="true">?</span>
       </div>
       <div class="metric-help" id="help-turn-metrics" role="tooltip" data-i18n="turnSectionTip"></div>
     </div>
-    <div class="pv-detail-pop" data-preview-group="turn" data-open="true" aria-hidden="true">
+    <div class="pv-detail-pop" data-preview-group="turn" data-open="${DEFAULT_SETTINGS.showTurnMetrics}" aria-hidden="true">
       <div class="pv-detail-card pv-live"><div class="turn-bar-list">
         ${PV_TURN_ITEMS.map(([key, labelKey, value]) => `<div class="turn-bar-item" data-turn-row="${key}"><span class="turn-bar-line"></span><span class="turn-bar-label" data-i18n="${labelKey}"></span>${key === 'requests' ? '<span class="turn-bar-short" data-i18n="turnReqsShort" aria-hidden="true">Re</span>' : ''}<span class="turn-bar-val">${value}</span></div>`).join('')}
       </div></div>

@@ -25,14 +25,14 @@ Provides **Statistics** and **Settings** tabs at the top (settings live exclusiv
   - **Reset countdown**: `compact` (default) or `localized`
 - **Features** (unified section):
   - **Highlight active model**: `false` (dims non-active quota pools when enabled)
-  - **Hide absent quota windows**: `false` (hides empty windows such as Argon's missing 5h window on AI Pro)
+  - **Hide absent quota windows**: `true` (hides empty windows such as Argon's missing 5h window on AI Pro)
   - **Cache expiry alert**: `true` (capsule icon turns yellow at 3m and red/cold at 4m idle; synced with panel Cache row)
   - **Context overload alert**: `true` (capsule text turns yellow above 75% and red above 90%)
   - **Request failure capsule**: `true`
   - **Generation speed** (`true`) + **Effects** (`false`; automatically forced off when speed is disabled)
   - **Context breakdown**: `true`; `columns` (default) or `rows`, `square` (default) or `dot` markers, with toggleable and drag-reorderable column fields (`Name`: `true`, `Value`: `true`, `%`: `false`; default order `label,value,percent`)
   - **Last request**: `true` (shows `TTFT–total duration` range and generation speed)
-  - **Turn metrics**: `true`; `columns` (default) or `rows`, `square` (default) or `dot` markers
+  - **Turn metrics**: `false`; `columns` (default) or `rows`, `square` (default) or `dot` markers
 
 ## Telemetry & Metric Definitions
 

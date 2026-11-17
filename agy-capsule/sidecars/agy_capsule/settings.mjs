@@ -2,7 +2,7 @@ import { mkdirSync, readFileSync, renameSync, statSync, writeFileSync } from 'no
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 
-export const DEFAULT_SETTINGS = Object.freeze({ language: 'en', settingsLanguage: 'zh-CN', panelLayout: 'natural', density: 'compact', quotaIndicator: 'ring', labelCase: 'lowercase', resetFormat: 'compact', contextLayout: 'columns', turnLayout: 'columns', contextMarker: 'square', turnMarker: 'square', showContextBreakdown: true, columnLabel: true, columnValue: true, columnPercent: false, columnOrder: 'label,value,percent', highlightActiveModel: false, hideUnavailableQuota: false, showCacheWarnings: true, showContextWarnings: true, showRequestErrors: true, showSpeed: true, speedAnimation: false, showRequestMetrics: true, showTurnMetrics: true });
+export const DEFAULT_SETTINGS = Object.freeze({ language: 'en', settingsLanguage: 'zh-CN', panelLayout: 'natural', density: 'compact', quotaIndicator: 'ring', labelCase: 'lowercase', resetFormat: 'compact', contextLayout: 'columns', turnLayout: 'columns', contextMarker: 'square', turnMarker: 'square', showContextBreakdown: true, columnLabel: true, columnValue: true, columnPercent: false, columnOrder: 'label,value,percent', highlightActiveModel: false, hideUnavailableQuota: true, showCacheWarnings: true, showContextWarnings: true, showRequestErrors: true, showSpeed: true, speedAnimation: false, showRequestMetrics: true, showTurnMetrics: false });
 const choices = {
   language: ['en', 'zh-CN', 'zh-TW'],
   settingsLanguage: ['en', 'zh-CN', 'zh-TW'],

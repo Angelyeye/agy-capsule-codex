@@ -49,6 +49,20 @@ test('unready files do not read; failed refresh retries its own snapshot without
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
+test('turn metrics can be enabled and disabled on an unchanged database', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'agy-metric-mode-'));
+  const path = join(dir, 'test.db');
+  try {
+    writeFileSync(path, 'fixture');
+    let reads = 0;
+    const cache = createSqliteSnapshotCache((_, includeTurnMetrics) => ({ turnMetrics: includeTurnMetrics ? { requestCount: 2 } : null, read: ++reads }));
+    assert.deepEqual(cache.read(path, false), { turnMetrics: null, read: 1 });
+    assert.deepEqual(cache.read(path, true), { turnMetrics: { requestCount: 2 }, read: 2 });
+    assert.deepEqual(cache.read(path, true), { turnMetrics: { requestCount: 2 }, read: 2 });
+    assert.deepEqual(cache.read(path, false), { turnMetrics: null, read: 3 });
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
 test('a write during a read is detected by the next poll rather than frozen under a later stamp', () => {
   const dir = mkdtempSync(join(tmpdir(), 'agy-race-'));
   const file = join(dir, 'test.db'); writeFileSync(file, 'a');

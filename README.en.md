@@ -4,6 +4,8 @@
 
 Context usage, multi-model quotas, cache status and generation speed in the Antigravity composer footer. Hover a capsule to see its panel; click it to pin the panel open.
 
+The [Bilibili promo video](https://www.bilibili.com/video/BV1zCsj65Ebc/) demos [v1.0.0](https://github.com/Lumidarin/agy-capsule/releases/tag/v1.0.0). The current version is **v1.1.0**. For a simpler footer like 1.0, turn off Generation speed, Last request, Turn metrics, and Request failure capsule in the sidebar [Settings](#settings). Turn off Context breakdown as well if you only want the key numbers.
+
 <p align="center">
   <img src="assets/readme/hero.gif" width="100%" alt="Hovering the context, quota and request-failure capsules in turn to open their panels" />
 </p>
@@ -22,7 +24,7 @@ Shows context usage, cache hit rate and cache status. The limit is read live for
 
 - **Context breakdown**: Splits the context into turn0 (first turn), read, think and write, showing each value and share. Choose rows or columns. Rows can use square or dot markers; columns let you toggle name, value and percent and reorder them.
 - **Last request**: Shows the range from first token to the end of the latest request (e.g. `4.5s–8.6s`) and its generation speed.
-- **Turn metrics**: Shows this turn's elapsed time, requests, thinking and write.
+- **Turn metrics (off by default)**: Shows this turn's elapsed time, requests, thinking and write.
 
 ## Quota
 
@@ -33,7 +35,7 @@ Shows the remaining 5-hour and weekly quotas and their reset countdowns for the 
 **Everything below is optional.**
 
 - **Highlight active model**: Highlights the pool of the selected model and dims the others.
-- **Hide absent quota windows**: For example, AI Pro users' Argon pool has no 5-hour quota, so that empty window is hidden.
+- **Hide absent quota windows (on by default)**: For example, AI Pro users' Argon pool has no 5-hour quota, so that empty window is hidden.
 
 ## Error alerts
 

@@ -70,7 +70,7 @@ const text = (field, value) => message(field, Buffer.from(value));
 const stamp = (field, seconds) => message(field, integer(1, seconds));
 const counters = Buffer.concat([integer(2, 20), integer(5, 80), integer(3, 15), integer(10, 10), integer(9, 5)]);
 const chat = (retries = [message(2, counters)]) => message(1, Buffer.concat([
-  message(4, counters), integer(14, retries.length - 1), ...retries.map(retry => message(17, retry)),
+  message(4, counters), stamp(11, 2), stamp(12, 3), integer(14, retries.length - 1), ...retries.map(retry => message(17, retry)),
   message(20, Buffer.concat([text(1, 'last_step_index'), text(2, '10')])),
 ]));
 
@@ -101,6 +101,8 @@ test('SQLite snapshot integrates latest user timestamps, request attempts and ex
   assert.equal(result.turnMetrics.duration, 20);
   assert.equal(result.turnMetrics.state, 'completed');
   assert.equal(result.contextTokens, 100, 'Existing context occupancy remains request-scoped');
+  assert.equal(result.turnSpeed.generation.tps, 3);
+  assert.deepEqual(readConversationSnapshot(path, false), { ...result, turnMetrics: null }, 'Disabling turn metrics preserves other telemetry');
 });
 
 test('turn display keeps scopes separate, exposes missing usage and updates elapsed time from anchors', () => {
