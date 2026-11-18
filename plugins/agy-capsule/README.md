@@ -37,7 +37,7 @@ It only accepts rollout files below that directory.
 Register the repository root as a local marketplace, then install the plugin:
 
 ```text
-codex plugin marketplace add D:\Codex\agy-capsule-codex
+codex plugin marketplace add <path-to-repo>
 codex plugin add agy-capsule@agy-capsule-local
 ```
 
