@@ -1,0 +1,20 @@
+{
+  "name": "agy-capsule-local",
+  "interface": {
+    "displayName": "agy-capsule Local"
+  },
+  "plugins": [
+    {
+      "name": "agy-capsule",
+      "source": {
+        "source": "local",
+        "path": "./plugins/agy-capsule"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    }
+  ]
+}

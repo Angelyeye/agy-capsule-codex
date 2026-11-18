@@ -4,6 +4,19 @@
 
 在 Antigravity 输入框底栏显示上下文占用、多模型配额、缓存状态和生成速度，悬停胶囊即可查看面板详情，点击胶囊即可固定面板。
 
+## Codex 移植版
+
+本仓库同时包含可直接加载的 Codex 插件，位于 [`plugins/agy-capsule`](./plugins/agy-capsule)。它读取 Codex 本地 rollout JSONL，提供上下文占用、缓存命中、输入／输出／思考 token、请求耗时和最近会话统计。
+
+Codex 版本不依赖 Antigravity 的 CDP、Gemini SQLite 或 Sidecar UI。安装方式：
+
+```text
+codex plugin marketplace add <path-to-repo>
+codex plugin add agy-capsule@agy-capsule-local
+```
+
+原有 `agy-capsule/` 目录和 `install.bat`／`install.sh` 仍用于 Antigravity 版本。
+
 [B 站宣传片](https://www.bilibili.com/video/BV1zCsj65Ebc/)展示的是 [v1.0.0](https://github.com/Lumidarin/agy-capsule/releases/tag/v1.0.0)。当前版本是 **v1.1.0**。想保留 1.0 的简约底栏，可以在侧栏[设置](#设置)关掉生成速度、最近请求、本轮统计和请求失败胶囊；如果只想看关键数字，还可以关掉上下文明细。
 
 <p align="center">

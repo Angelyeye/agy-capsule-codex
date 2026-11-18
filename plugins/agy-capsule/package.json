@@ -1,0 +1,15 @@
+{
+  "name": "agy-capsule-codex-plugin",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Codex-native local telemetry port of agy-capsule.",
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "report": "node scripts/agy-capsule.mjs report",
+    "list": "node scripts/agy-capsule.mjs list"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
