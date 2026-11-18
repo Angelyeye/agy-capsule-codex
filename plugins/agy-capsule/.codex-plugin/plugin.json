@@ -1,0 +1,46 @@
+{
+  "name": "agy-capsule",
+  "version": "0.1.0",
+  "description": "Read-only Codex context, cache, token, request, and generation metrics from local rollout telemetry.",
+  "author": {
+    "name": "Angelyeye",
+    "url": "https://github.com/Angelyeye"
+  },
+  "homepage": "https://github.com/Angelyeye/agy-capsule-codex",
+  "repository": "https://github.com/Angelyeye/agy-capsule-codex",
+  "license": "MIT",
+  "keywords": [
+    "codex",
+    "context-window",
+    "tokens",
+    "telemetry",
+    "cache",
+    "generation-speed"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "agy-capsule",
+    "shortDescription": "Inspect Codex context and token usage locally",
+    "longDescription": "A Codex-native port of agy-capsule. It reads local Codex rollout JSONL files and exposes current context usage, cache hit rate, input/output/reasoning tokens, request counts, recent request timing, and session history through read-only MCP tools and a chat-facing skill.",
+    "developerName": "Angelyeye",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Local read-only telemetry",
+      "Context-window usage",
+      "Token and cache breakdown",
+      "Recent request timing",
+      "Session history"
+    ],
+    "websiteURL": "https://github.com/Angelyeye/agy-capsule-codex",
+    "defaultPrompt": [
+      "Show my latest Codex context and token usage",
+      "How much context is this session using?",
+      "Compare my recent Codex sessions"
+    ],
+    "brandColor": "#8B5CF6",
+    "composerIcon": "./assets/agy-capsule.svg",
+    "logo": "./assets/agy-capsule.svg",
+    "screenshots": []
+  }
+}

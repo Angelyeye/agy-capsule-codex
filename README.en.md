@@ -4,6 +4,24 @@
 
 Context usage, multi-model quotas, cache status and generation speed in the Antigravity composer footer. Hover a capsule to see its panel; click it to pin the panel open.
 
+## Codex port
+
+This repository also contains a loadable Codex plugin at
+[`plugins/agy-capsule`](./plugins/agy-capsule). It reads Codex rollout JSONL
+telemetry and reports context usage, cache hits, input/output/reasoning tokens,
+request timing, and recent sessions.
+
+The Codex port does not depend on Antigravity CDP, Gemini SQLite, or the
+Antigravity Sidecar UI. Install it with:
+
+```text
+codex plugin marketplace add <path-to-repo>
+codex plugin add agy-capsule@agy-capsule-local
+```
+
+The original `agy-capsule/` directory and `install.bat` / `install.sh`
+remain the Antigravity implementation.
+
 The [Bilibili promo video](https://www.bilibili.com/video/BV1zCsj65Ebc/) demos [v1.0.0](https://github.com/Lumidarin/agy-capsule/releases/tag/v1.0.0). The current version is **v1.1.0**. For a simpler footer like 1.0, turn off Generation speed, Last request, Turn metrics, and Request failure capsule in the sidebar [Settings](#settings). Turn off Context breakdown as well if you only want the key numbers.
 
 <p align="center">
